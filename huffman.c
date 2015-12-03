@@ -275,8 +275,6 @@ void freeTree(node *nP)
 
 /* MOVE TO PRINTTREE.C  */
 
-
-
 int getWidth(node *c0, unsigned width)
 {
     if(c0->c0 != NULL){
