@@ -4,9 +4,6 @@ File: huffman.h
 
 Description: header for huffman encoding functions
 
-
-TODO - change pairAndRequeue to not return value - pointer to  q2Top
-
 */
 
 
@@ -14,6 +11,7 @@ TODO - change pairAndRequeue to not return value - pointer to  q2Top
 #include <stdio.h>  /* FILE, printf, fprintf, scanf, */
 #include <stdlib.h> /* exit, calloc, malloc, free */
 #include <ctype.h> /* tolower */
+#include <string.h> /*strcpy */
 
 #define MEMERR "memory allocation error at line %d", __LINE__
 

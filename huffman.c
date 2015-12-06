@@ -14,13 +14,13 @@ TODO - change pairAndRequeue to not return value - pointer to  q2Top
 */
 
 
-#include "huffman.h"
 #include "printTree.h"
 
 
 int main(int argc, char *argv[])
 {
     node *chars, *q=NULL, *root;
+    printPar *pState;
 
     if(argc!=2){
         fprintf(stderr, "incorrect usage, try eg"
@@ -36,7 +36,12 @@ int main(int argc, char *argv[])
 
     printEncoding(chars);
 
-    printf("TreeWidth: %d\n", getWidth(root->c0, 0));
+    pState = printInit();
+
+    printf("TreeWidth: %d\n", makePrintQ(root, 0, 0, pState));
+
+
+    printQueue(pState);
 
     freeTree(root);
     free(chars);
@@ -273,17 +278,11 @@ void freeTree(node *nP)
 
 
 
-/* MOVE TO PRINTTREE.C  */
 
-int getWidth(node *c0, unsigned width)
-{
-    if(c0->c0 != NULL){
-        width += getWidth(c0->c0, 0);
-    }
-    if(c0->c1 != NULL){
-        width += getWidth(c0->c1, 1);
-    }
 
-    return width;
-}
+
+
+
+
+
 
