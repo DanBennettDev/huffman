@@ -41,7 +41,7 @@ int makePrintQbak(node *c0, unsigned width, unsigned line, printPar *state)
 
 
 
-int makePrintQ(node *c0, unsigned width, unsigned line, printPar *state)
+int makePrintQbak2(node *c0, unsigned width, unsigned line, printPar *state)
 {
     treePart part = Leaf;
     unsigned i=0;
@@ -77,7 +77,17 @@ int makePrintQ(node *c0, unsigned width, unsigned line, printPar *state)
 
 
 
+int makePrintQ(node *n, loc Printloc, int branchWdth, printPar *state)
+{
+    treePart part = Leaf;
 
+    /* mark this node */
+    if(n->c0 !=NULL || n->c1){
+        part = iNode;
+    }
+
+
+}
 
 
 
