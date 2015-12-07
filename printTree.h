@@ -9,12 +9,17 @@ Description: header for huffman tree printing functions
 #include "huffman.h"
 
 #define TPRINTPART 2
-#define TREEPARTS 3
+#define TREEPARTS 4
 #define ROWSPERLINE 2
 
 typedef enum TreePart {
-    intNd, Leaf, Pad
+    intNd, Leaf, Conn, Space
 } treePart;
+
+enum LinePart {
+    NODE, LEFTARM
+};
+
 
 
 typedef struct TreePrint {
@@ -42,3 +47,4 @@ int makePrintQ(node *n, int posL, int posR, int incR, printPar *state);
 printPar *printInit(void);
 void printQAdd(printPar *state, treePart part, char c, int posL, int posR);
 void printQueue(printPar *state);
+void printNode(printQ *Q, int linepart, printPar *state);

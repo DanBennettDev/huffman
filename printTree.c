@@ -1,5 +1,3 @@
-
-
 /*
 File: printTree.c
 
@@ -18,23 +16,17 @@ int makePrintQ(node *n, int posL, int posR, int incR, printPar *state)
     int lSubTreeWidth;
 
     if(n==NULL){
-        return incR;
+        return 0;
     }
-
     printQAdd(state, part, n->chr, posL, posR);
 
     lSubTreeWidth = makePrintQ(n->c0, posL+1, posR, 0, state);
 
     posR += lSubTreeWidth;
-
     incR += makePrintQ(n->c1, posL, posR+1, 1 , state);
 
-    incR += lSubTreeWidth;
-
-    return incR;
+    return incR + lSubTreeWidth;
 }
-
-
 
 
 
@@ -50,8 +42,12 @@ printPar *printInit(void)
     strcpy(state->treeLookup[Leaf].line0,  "C ");
     strcpy(state->treeLookup[Leaf].line1,  "  ");
 
-    strcpy(state->treeLookup[Pad].line0,   "--");
-    strcpy(state->treeLookup[Pad].line1,   "  ");
+    strcpy(state->treeLookup[Conn].line0,   "--");
+    strcpy(state->treeLookup[Conn].line1,   "  ");
+
+    strcpy(state->treeLookup[Space].line0,   "  ");
+    strcpy(state->treeLookup[Space].line1,   "  ");
+
 
     return state;
 }
@@ -87,16 +83,85 @@ void printQAdd(printPar *state, treePart part, char c, int posL, int posR)
 
 void printQueue(printPar *state)
 {
+    /* build in freeing*/
     printQ *Q;
+    int currLine = 0, linepart = NODE;
 
     Q = state->Q;
 
     while(Q!=NULL){
-        printf("part %d, char %c, loc %d,%d\n",
-                Q->part, Q->c, Q->posL, Q->posR);
+        if(Q->posL > currLine){
+            printf("\n");
+
+            if(linepart == NODE){
+                linepart = LEFTARM;
+                Q = state->Q;
+            } else {
+                linepart = NODE;
+                currLine = Q->posL;
+            }
+        }
+
+        printNode(Q, linepart, state);
+
         Q = Q->next;
     }
 }
+
+
+void printNode(printQ *Q, int linepart, printPar *state)
+{
+
+
+    if(Q->part == intNd){
+        if(linepart==Node){
+            printf("%s", state->treeLookup[intNd].line0);
+
+            if(Q->next->posR > Q->posR+1){
+                fillSpace(Q, linepart, state);
+            }
+
+
+
+
+        } else { /* linepart - left arms */
+            printf("%s", state->tPrint.Line1);
+        }
+
+
+
+
+    } else if (Q->part == Leaf){
+
+
+
+
+
+    }
+
+}
+
+void fillSpace(printQ *Q, int linepart, printPar *state)
+{
+    int i = 0, diff;
+    diff = (Q->next->posR - Q->posR) - 1;
+
+    if(linepart==NODE){
+        while(diff>0){
+            printf("%s", state->treeLookup[Conn].line0);
+            diff--;
+        }
+    }
+
+    if(linepart==LEFTARM){
+        while(diff>0){
+
+        }
+    }
+}
+
+
+
 
 
 
