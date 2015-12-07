@@ -38,10 +38,11 @@ int main(int argc, char *argv[])
 
     pState = printInit();
 
-    printf("TreeWidth: %d\n", makePrintQ(root, 0, 0, pState));
 
+    printf("TreeWidth: %d\n", makePrintQ(root, 0, 0, 0, pState));
 
     printQueue(pState);
+
 
     freeTree(root);
     free(chars);

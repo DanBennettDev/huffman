@@ -11,82 +11,27 @@ Description: functions for huffman tree printing
 
 /* MOVE TO PRINTTREE.C  */
 
-int makePrintQbak(node *c0, unsigned width, unsigned line, printPar *state)
+
+int makePrintQ(node *n, int posL, int posR, int incR, printPar *state)
 {
     treePart part = Leaf;
-    unsigned i=0;
+    int lSubTreeWidth;
 
-
-    if(c0->c1 != NULL){
-        width += makePrintQ(c0->c1, 1, line, state);
-    }
-    if(c0->c0 != NULL){
-        width += makePrintQ(c0->c0, 0, line + ROWSPERLINE, state);
+    if(n==NULL){
+        return incR;
     }
 
-    if(c0->c1 !=NULL || c0->c1){
-        part = iNode;
-    }
+    printQAdd(state, part, n->chr, posL, posR);
 
-    /* queue element */
-    printQAdd(state, part, c0->chr, line);
+    lSubTreeWidth = makePrintQ(n->c0, posL+1, posR, 0, state);
 
-    /* queue padding */
-    while(i< width){
-        printQAdd(state, Pad, 0, line);
-        i++;
-    }
-    return width;
-}
+    posR += lSubTreeWidth;
 
+    incR += makePrintQ(n->c1, posL, posR+1, 1 , state);
 
+    incR += lSubTreeWidth;
 
-int makePrintQbak2(node *c0, unsigned width, unsigned line, printPar *state)
-{
-    treePart part = Leaf;
-    unsigned i=0;
-
-
-    if(c0->c1 !=NULL || c0->c1){
-        part = iNode;
-    }
-    /* mark pos of this node */
-    printf("line %d, part %d, char %c\n", line, part, c0->chr);
-    printQAdd(state, part, c0->chr, line);
-
-
-    /* do left branch & return width */
-    if(c0->c0 != NULL){
-        width += makePrintQ(c0->c0, 0, line + ROWSPERLINE, state);
-        part = iNode;
-    }
-
-    /* queue padding */
-    while(i< width){
-        printQAdd(state, Pad, 0, line);
-        i++;
-    }
-
-    /* do right branch */
-    if(c0->c1 != NULL){
-        width += makePrintQ(c0->c1, 1, line, state);
-    }
-
-    return width;
-}
-
-
-
-int makePrintQ(node *n, loc Printloc, int branchWdth, printPar *state)
-{
-    treePart part = Leaf;
-
-    /* mark this node */
-    if(n->c0 !=NULL || n->c1){
-        part = iNode;
-    }
-
-
+    return incR;
 }
 
 
@@ -99,8 +44,8 @@ printPar *printInit(void)
 
     myCalloc(state, 1, sizeof(printPar), MEMERR);
 
-    strcpy(state->treeLookup[iNode].line0, ".-");
-    strcpy(state->treeLookup[iNode].line1, "| ");
+    strcpy(state->treeLookup[intNd].line0, ".-");
+    strcpy(state->treeLookup[intNd].line1, "| ");
 
     strcpy(state->treeLookup[Leaf].line0,  "C ");
     strcpy(state->treeLookup[Leaf].line1,  "  ");
@@ -111,23 +56,21 @@ printPar *printInit(void)
     return state;
 }
 
-void printQAdd(printPar *state, treePart part, char c, int line)
+void printQAdd(printPar *state, treePart part, char c, int posL, int posR)
 {
     printQ *qThis, *qCurr, *qPrev;
 
     myCalloc(qThis, 1, sizeof(printQ), MEMERR);
 
-    qThis->line = line;
-    qThis->print = state->treeLookup[part];
-
-    if(part==Leaf){
-        qThis->print.line0[0] = c;
-    }
+    qThis->posL = posL;
+    qThis->posR = posR;
+    qThis->part = part;
+    qThis->c = c;
 
     qPrev = NULL;
     qCurr = state->Q;
-    /* add to front of correct line in queue*/
-    while(qCurr!=NULL && qThis->line >= qCurr->line){
+    /* add to correct place in print queue*/
+    while(qCurr!=NULL && qThis->posL >= qCurr->posL){
         qPrev = qCurr;
         qCurr = qCurr->next;
     }
@@ -145,27 +88,16 @@ void printQAdd(printPar *state, treePart part, char c, int line)
 void printQueue(printPar *state)
 {
     printQ *Q;
-    unsigned i = 0, end = 0;
 
-    while(end==0){
-        end = 1;
-        Q = state->Q;
-        while(Q!=NULL){
-            if(i == Q->line){
-                end = 0;
-                printf("%s", Q->print.line0);
-            }
-            if(i == Q->line+1){
-                end = 0;
-                printf("%s", Q->print.line1);
-            }
-            Q = Q->next;
-        }
-        i++;
-        printf("\n");
+    Q = state->Q;
+
+    while(Q!=NULL){
+        printf("part %d, char %c, loc %d,%d\n",
+                Q->part, Q->c, Q->posL, Q->posR);
+        Q = Q->next;
     }
-
 }
+
 
 
 /*
@@ -197,6 +129,11 @@ H C   E B _
 .-.-d .-.-.-a f
 | |   | | |
 h c   e b
+
+
+.---.-------.-g
+|   |       |
+.-.-
 
 
 */

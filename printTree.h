@@ -13,7 +13,7 @@ Description: header for huffman tree printing functions
 #define ROWSPERLINE 2
 
 typedef enum TreePart {
-    iNode, Leaf, Pad
+    intNd, Leaf, Pad
 } treePart;
 
 
@@ -22,9 +22,12 @@ typedef struct TreePrint {
     char line1[TPRINTPART + 1];
 } tPrint;
 
+
 typedef struct printQueue {
-    tPrint print;
-    unsigned line;
+    treePart part;
+    char c;
+    int posL;
+    int posR;
     struct printQueue *next;
 }   printQ;
 
@@ -35,7 +38,7 @@ typedef struct printParams {
 
 
 
-int makePrintQ(node *c0, unsigned width, unsigned line, printPar *state);
+int makePrintQ(node *n, int posL, int posR, int incR, printPar *state);
 printPar *printInit(void);
-void printQAdd(printPar *state, treePart part, char c, int line);
+void printQAdd(printPar *state, treePart part, char c, int posL, int posR);
 void printQueue(printPar *state);
