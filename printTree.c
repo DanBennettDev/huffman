@@ -79,7 +79,7 @@ void printQueue(printQ *Q)
 {
     /* fix prespacing on newline*/
     printQ *Qthis = Q, *Qprev = NULL;
-    int currLine = 0, linepart = NODE;
+    int currLine = 0, linepart = NODE, i;
 
 
     while(Qthis!=NULL){
@@ -93,6 +93,10 @@ void printQueue(printQ *Q)
                 linepart = NODE;
                 currLine = Qthis->posL;
             }
+            /*pad to newline start*/
+            for(i=0; i<Qthis->posR; i++){
+                PRINTPART(SPACE);
+            }
         }
         printNode(Qthis, linepart);
         Qprev = Qthis;
@@ -104,6 +108,14 @@ void printQueue(printQ *Q)
         }
     }
     printf("\n");
+
+    /* tidy up final line*/
+    Qthis = Q;
+    while(Qthis!=NULL){
+        Qprev = Qthis;
+        Qthis = Qthis->next;
+        free(Qprev);
+    }
 }
 
 
