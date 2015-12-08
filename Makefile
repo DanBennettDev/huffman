@@ -1,6 +1,6 @@
 
 EX =
-CFLAGS = `pkg-config --cflags cunit` -pedantic -Wall -Wextra -Wfloat-equal -std=c90 -g
+CFLAGS = `pkg-config --cflags cunit` -pedantic -Wall -Wextra -Wfloat-equal -std=c90 -O3
 SOURCES = $(TARGET).c printTree.c
 LIBS = `pkg-config --libs cunit`
 

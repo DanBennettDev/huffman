@@ -3,21 +3,9 @@ File: printTree.c
 
 Description: functions for huffman tree printing
 
-
-
-
-todo
-    Get rid of state struct
 */
 
-
-
 #include "printTree.h"
-
-
-
-/* MOVE TO PRINTTREE.C  */
-
 
 int makePrintQ(node *n, int posL, int posR, int incR, printQ **Q)
 {

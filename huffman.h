@@ -6,8 +6,6 @@ Description: header for huffman encoding functions
 
 */
 
-
-
 #include <stdio.h>  /* FILE, printf, fprintf, scanf, */
 #include <stdlib.h> /* exit, calloc, malloc, free */
 #include <ctype.h> /* tolower */
@@ -23,6 +21,7 @@ Description: header for huffman encoding functions
             } while(0)
 
 #define ASCIICHARS 127
+#define BITSINBYTE 8
 
 
 typedef struct Node {

@@ -7,10 +7,6 @@ usage: huffman /path/to/textfile.txt
 
 expects ASCII / utf-8 text file.
 
-
-TODO - change pairAndRequeue to not return value - pointer to  q2Top
-	 - make print bytes (in other script)
-
 */
 
 
@@ -34,12 +30,9 @@ int main(int argc, char *argv[])
 
     root = buildTree(q);
 
-    printEncoding(chars);
-
-    printf("TreeWidth: %d\n", makePrintQ(root, 0, 0, 0, &Q));
+    makePrintQ(root, 0, 0, 0, &Q);
 
     printQueue(Q);
-
 
     freeTree(root);
     free(chars);
@@ -246,7 +239,7 @@ void printEncoding(node *chars)
             printf("%20s (%4d * %8d)\n", huffcode, depth, chars[c].weight);
         }
     }
-    printf("%d bytes\n", (bits/8) + (bits%8 ==0 ? 0:1));
+    printf("%d bytes\n", (bits/BITSINBYTE) + (bits%BITSINBYTE ==0 ? 0:1));
 }
 
 void revStr(char *str, int len)

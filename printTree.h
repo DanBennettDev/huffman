@@ -9,8 +9,6 @@ Description: header for huffman tree printing functions
 #include "huffman.h"
 
 #define TPRINTPART 2
-#define TREEPARTS 4
-#define ROWSPERLINE 2
 
 #define INTNd0 ".-"
 #define INTNd1 "| "
@@ -30,14 +28,6 @@ enum LinePart {
     NODE, LEFTARM
 };
 
-
-
-typedef struct TreePrint {
-    char line0[TPRINTPART + 1];
-    char line1[TPRINTPART + 1];
-} tPrint;
-
-
 typedef struct printQueue {
     treePart part;
     char c;
@@ -46,12 +36,9 @@ typedef struct printQueue {
     struct printQueue *next;
 }   printQ;
 
-
-
 int makePrintQ(node *n, int posL, int posR, int incR, printQ **Q);
 void printQAdd(printQ **Q, treePart part, char c, int posL, int posR);
 void printQueue(printQ *Q);
 void printNode(printQ *Q, int linepart);
 void fillSpace(printQ *Q, int linepart);
-
 
