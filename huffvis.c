@@ -13,7 +13,10 @@ expects ASCII / utf-8 text file.
 
 #include "printTree.h"
 
+/* I also use this file as library for huffsdl
+ - -DHUFFSDL_EX flag used in makefile in that case*/
 
+#ifndef HUFFSDL_EX
 int main(int argc, char *argv[])
 {
     node *chars, *q=NULL, *root;
@@ -40,7 +43,7 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
+#endif
 
 
 node *getCharCounts(char *filename)
