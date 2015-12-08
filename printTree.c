@@ -77,12 +77,13 @@ void printQAdd(printQ **Q, treePart part, char c, int posL, int posR)
 
 void printQueue(printQ *Q)
 {
-    /* build in freeing*/
+    /* fix prespacing on newline*/
     printQ *Qthis = Q, *Qprev = NULL;
     int currLine = 0, linepart = NODE;
 
+
     while(Qthis!=NULL){
-        if(Qthis->posL > currLine){ /* line changes */
+        if(Qthis->posL != currLine){ /* line changes */
             printf("\n");
 
             if(linepart == NODE){
@@ -91,15 +92,18 @@ void printQueue(printQ *Q)
             } else {
                 linepart = NODE;
                 currLine = Qthis->posL;
-                free(Qprev);
-                Q = Qthis;
             }
         }
         printNode(Qthis, linepart);
         Qprev = Qthis;
         Qthis = Qthis->next;
+        /*on 2nd run free elements */
+        if(linepart==LEFTARM){
+            free(Qprev);
+            Q = Qthis;
+        }
     }
-    printf("finished\n");
+    printf("\n");
 }
 
 
