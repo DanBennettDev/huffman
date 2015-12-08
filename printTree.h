@@ -6,7 +6,7 @@ Description: header for huffman tree printing functions
 
 */
 
-#include "huffman.h"
+#include "huffvis.h"
 
 #define TPRINTPART 2
 
@@ -15,9 +15,6 @@ Description: header for huffman tree printing functions
 
 #define CONN   "--"
 #define SPACE  "  "
-
-#define PRINTPART(PART) printf("%s", PART)
-#define PRINTLEAF1(C) printf("%c ", C)
 
 
 typedef enum TreePart {

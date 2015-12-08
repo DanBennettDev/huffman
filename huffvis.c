@@ -1,7 +1,8 @@
 /*
 File: huffman.c
 
-Description: calculates huffman codes for a document.
+Description: calculates huffman codes for a document
+             and prints tree in ascii
 
 usage: huffman /path/to/textfile.txt
 

@@ -83,7 +83,7 @@ void printQueue(printQ *Q)
             }
             /*pad to newline start*/
             for(i=0; i<Qthis->posR; i++){
-                PRINTPART(SPACE);
+                printf("%s", SPACE);
             }
         }
         printNode(Qthis, linepart);
@@ -111,21 +111,21 @@ void printNode(printQ *Q, int linepart)
 {
     if(Q->part == intNd){
         if(linepart==NODE){
-            PRINTPART(INTNd0);
+            printf("%s", INTNd0);
             fillSpace(Q, linepart);
 
         } else { /* linepart - left arms */
-            PRINTPART(INTNd1);
+            printf("%s", INTNd1);
             fillSpace(Q, linepart);
         }
 
     } else { /* tree part = leaf */
         if(linepart==NODE){
-            PRINTLEAF1(Q->c);
+            printf("%c ", Q->c);
             fillSpace(Q, linepart);
 
         } else { /* linepart - left arms */
-            PRINTPART(SPACE);
+            printf("%s", SPACE);
             fillSpace(Q, linepart);
         }
     }
@@ -144,12 +144,12 @@ void fillSpace(printQ *Q, int linepart)
 
     if(linepart==NODE && Q->part == intNd){
         while(diff>0){
-            PRINTPART(CONN);
+            printf("%s", CONN);
             diff--;
         }
     } else {
         while(diff>0){
-            PRINTPART(SPACE);
+            printf("%s", SPACE);
             diff--;
         }
 
