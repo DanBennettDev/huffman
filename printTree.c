@@ -3,56 +3,50 @@ File: printTree.c
 
 Description: functions for huffman tree printing
 
+
+
+
+todo
+    Get rid of state struct
 */
 
+
+
 #include "printTree.h"
+
+
 
 /* MOVE TO PRINTTREE.C  */
 
 
-int makePrintQ(node *n, int posL, int posR, int incR, printPar *state)
+int makePrintQ(node *n, int posL, int posR, int incR, printQ **Q)
 {
-    treePart part = Leaf;
+    treePart part;
     int lSubTreeWidth;
 
     if(n==NULL){
         return 0;
     }
-    printQAdd(state, part, n->chr, posL, posR);
 
-    lSubTreeWidth = makePrintQ(n->c0, posL+1, posR, 0, state);
+    if(n->c0!=NULL || n->c1!=NULL){
+        part = intNd;
+    } else {
+        part = Leaf;
+    }
+
+    printQAdd(Q, part, n->chr, posL, posR);
+
+    lSubTreeWidth = makePrintQ(n->c0, posL+1, posR, 0, Q);
 
     posR += lSubTreeWidth;
-    incR += makePrintQ(n->c1, posL, posR+1, 1 , state);
+    incR += makePrintQ(n->c1, posL, posR+1, 1 , Q);
 
     return incR + lSubTreeWidth;
 }
 
 
 
-printPar *printInit(void)
-{
-    printPar *state;
-
-    myCalloc(state, 1, sizeof(printPar), MEMERR);
-
-    strcpy(state->treeLookup[intNd].line0, ".-");
-    strcpy(state->treeLookup[intNd].line1, "| ");
-
-    strcpy(state->treeLookup[Leaf].line0,  "C ");
-    strcpy(state->treeLookup[Leaf].line1,  "  ");
-
-    strcpy(state->treeLookup[Conn].line0,   "--");
-    strcpy(state->treeLookup[Conn].line1,   "  ");
-
-    strcpy(state->treeLookup[Space].line0,   "  ");
-    strcpy(state->treeLookup[Space].line1,   "  ");
-
-
-    return state;
-}
-
-void printQAdd(printPar *state, treePart part, char c, int posL, int posR)
+void printQAdd(printQ **Q, treePart part, char c, int posL, int posR)
 {
     printQ *qThis, *qCurr, *qPrev;
 
@@ -64,7 +58,7 @@ void printQAdd(printPar *state, treePart part, char c, int posL, int posR)
     qThis->c = c;
 
     qPrev = NULL;
-    qCurr = state->Q;
+    qCurr = *Q;
     /* add to correct place in print queue*/
     while(qCurr!=NULL && qThis->posL >= qCurr->posL){
         qPrev = qCurr;
@@ -73,7 +67,7 @@ void printQAdd(printPar *state, treePart part, char c, int posL, int posR)
 
     if(qPrev==NULL){
         qThis->next = qCurr;
-        state->Q = qThis;
+        *Q = qThis;
     } else {
         qThis->next = qCurr;
         qPrev->next = qThis;
@@ -81,124 +75,79 @@ void printQAdd(printPar *state, treePart part, char c, int posL, int posR)
 }
 
 
-void printQueue(printPar *state)
+void printQueue(printQ *Q)
 {
     /* build in freeing*/
-    printQ *Q;
+    printQ *Qthis = Q, *Qprev = NULL;
     int currLine = 0, linepart = NODE;
 
-    Q = state->Q;
-
-    while(Q!=NULL){
-        if(Q->posL > currLine){
+    while(Qthis!=NULL){
+        if(Qthis->posL > currLine){ /* line changes */
             printf("\n");
 
             if(linepart == NODE){
                 linepart = LEFTARM;
-                Q = state->Q;
+                Qthis = Q;
             } else {
                 linepart = NODE;
-                currLine = Q->posL;
+                currLine = Qthis->posL;
+                free(Qprev);
+                Q = Qthis;
             }
         }
-
-        printNode(Q, linepart, state);
-
-        Q = Q->next;
+        printNode(Qthis, linepart);
+        Qprev = Qthis;
+        Qthis = Qthis->next;
     }
+    printf("finished\n");
 }
 
 
-void printNode(printQ *Q, int linepart, printPar *state)
+void printNode(printQ *Q, int linepart)
 {
-
-
     if(Q->part == intNd){
-        if(linepart==Node){
-            printf("%s", state->treeLookup[intNd].line0);
-
-            if(Q->next->posR > Q->posR+1){
-                fillSpace(Q, linepart, state);
-            }
-
-
-
+        if(linepart==NODE){
+            PRINTPART(INTNd0);
+            fillSpace(Q, linepart);
 
         } else { /* linepart - left arms */
-            printf("%s", state->tPrint.Line1);
+            PRINTPART(INTNd1);
+            fillSpace(Q, linepart);
         }
 
+    } else { /* tree part = leaf */
+        if(linepart==NODE){
+            PRINTLEAF1(Q->c);
+            fillSpace(Q, linepart);
 
-
-
-    } else if (Q->part == Leaf){
-
-
-
-
-
+        } else { /* linepart - left arms */
+            PRINTPART(SPACE);
+            fillSpace(Q, linepart);
+        }
     }
-
 }
 
-void fillSpace(printQ *Q, int linepart, printPar *state)
+
+
+void fillSpace(printQ *Q, int linepart)
 {
-    int i = 0, diff;
+    int diff;
+    if(Q->next==NULL || Q->next->posR == Q->posR+1){
+        return;
+    }
+
     diff = (Q->next->posR - Q->posR) - 1;
 
-    if(linepart==NODE){
+    if(linepart==NODE && Q->part == intNd){
         while(diff>0){
-            printf("%s", state->treeLookup[Conn].line0);
+            PRINTPART(CONN);
             diff--;
         }
-    }
-
-    if(linepart==LEFTARM){
+    } else {
         while(diff>0){
-
+            PRINTPART(SPACE);
+            diff--;
         }
+
     }
 }
-
-
-
-
-
-
-/*
-print width * 2  + 1 spaces above
-
-for inner node queue [.-] on {line} and [| ] on {line+1}
-for leaf node queue  [C ] on {line} and [  ] on {line+1}
-for pad queue width* [--] on {line} and [  ] on {line+1}
-
-.-----.-------.-G
-|     |       |
-.-.-D .-.-.-A F
-| |   | | |
-H E   C B 0
-
-
-
-
-.-----.-------.-G
-|     |       |
-.-.-D .-.-.-A F
-| |   | | |
-H C   E B _
-
-
-
-.-----.-------.-g
-|     |       |
-.-.-d .-.-.-a f
-| |   | | |
-h c   e b
-
-
-.---.-------.-g
-|   |       |
-.-.-
-
-
-*/

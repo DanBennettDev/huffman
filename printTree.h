@@ -12,6 +12,16 @@ Description: header for huffman tree printing functions
 #define TREEPARTS 4
 #define ROWSPERLINE 2
 
+#define INTNd0 ".-"
+#define INTNd1 "| "
+
+#define CONN   "--"
+#define SPACE  "  "
+
+#define PRINTPART(PART) printf("%s", PART)
+#define PRINTLEAF1(C) printf("%c ", C)
+
+
 typedef enum TreePart {
     intNd, Leaf, Conn, Space
 } treePart;
@@ -36,15 +46,10 @@ typedef struct printQueue {
     struct printQueue *next;
 }   printQ;
 
-typedef struct printParams {
-    printQ * Q;
-    tPrint treeLookup[TREEPARTS];
-} printPar;
 
 
-
-int makePrintQ(node *n, int posL, int posR, int incR, printPar *state);
-printPar *printInit(void);
-void printQAdd(printPar *state, treePart part, char c, int posL, int posR);
-void printQueue(printPar *state);
-void printNode(printQ *Q, int linepart, printPar *state);
+int makePrintQ(node *n, int posL, int posR, int incR, printQ **Q);
+void printQAdd(printQ **Q, treePart part, char c, int posL, int posR);
+void printQueue(printQ *Q);
+void printNode(printQ *Q, int linepart);
+void fillSpace(printQ *Q, int linepart);

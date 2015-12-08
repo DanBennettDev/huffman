@@ -20,7 +20,7 @@ TODO - change pairAndRequeue to not return value - pointer to  q2Top
 int main(int argc, char *argv[])
 {
     node *chars, *q=NULL, *root;
-    printPar *pState;
+    printQ * Q = NULL;
 
     if(argc!=2){
         fprintf(stderr, "incorrect usage, try eg"
@@ -36,12 +36,9 @@ int main(int argc, char *argv[])
 
     printEncoding(chars);
 
-    pState = printInit();
+    printf("TreeWidth: %d\n", makePrintQ(root, 0, 0, 0, &Q));
 
-
-    printf("TreeWidth: %d\n", makePrintQ(root, 0, 0, 0, pState));
-
-    printQueue(pState);
+    printQueue(Q);
 
 
     freeTree(root);
@@ -68,7 +65,7 @@ node *getCharCounts(char *filename)
     fp = openFile(filename);
     while((c=fgetc(fp)) != EOF) {
         c = tolower(c);
-        if(c >=0 && c < ASCIICHARS){
+        if(c >=0 && c < ASCIICHARS && isalpha(c)){
             chars[c].weight++;
         }
     }
