@@ -16,10 +16,11 @@ todo:
 int main(int argc, char *argv[])
 {
     node *chars, *q=NULL, *root;
-    printQ *pQ = NULL;
     SDL_Simplewin sw;
+    unsigned maxdepth;
+    fntrow font[FNTCHARS][FNTHEIGHT];
 
-    unsigned test;
+
 
     if(argc!=2){
         fprintf(stderr, "incorrect usage, try eg"
@@ -36,8 +37,11 @@ int main(int argc, char *argv[])
     /* VISUALISATION */
     /*set up screen*/
     SDL_myInit(&sw);
+    Neill_SDL_ReadFont(font, FONTFILE);
 
-    drawTree(&sw, root, 0, 0, pQ);
+
+    maxdepth = getDepth(root, 0);
+    drawTree(&sw, root, 0, 0, maxdepth, font);
 
     /* update window once */
     SDL_Delay(DRAWDELAY);
@@ -60,68 +64,70 @@ int main(int argc, char *argv[])
     freeTree(root);
     free(chars);
 
-    for(test=0; test< 10; test++){
-        printf("%d : %d : %d\n", test, test<<1, (test<<1) + 1);
-    }
-
 
     return 0;
 }
 
 
-int drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, int depth,
-        printQ *Q)
+unsigned getDepth(node *n, unsigned d)
 {
-    int maxd, d;
-
+    unsigned d0, d1;
     if(n==NULL){
-        return 0;
+        return d-1;
     }
 
-    printf("bit: %d\n", n->bit);
-    huffcode = (huffcode<<1) + n->bit;
+    d0 = getDepth(n->c0 ,d+1);
+    d1 = getDepth(n->c1 ,d+1);
 
-    d = drawTree(sw, n->c0, huffcode, depth+1, Q);
-    maxd = depth > d ? depth : d;
-
-    d = drawTree(sw, n->c1, huffcode, depth+1, Q);
-    maxd = maxd > d ? maxd : d;
-
-    SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, TRANS);
-    if(depth){
-        drawEdge(sw, huffcode, depth, maxd);
-    }
-    return maxd;
+    return d0 > d1 ? d0: d1;
 }
 
+
+void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
+                unsigned maxd, fntrow fnt[FNTCHARS][FNTHEIGHT])
+{
+    cart this, parent;
+    if(n==NULL){
+        return;
+    }
+
+
+    huffcode = (huffcode<<1) + n->bit;
+
+    drawTree(sw, n->c0, huffcode, depth+1, maxd, fnt);
+    drawTree(sw, n->c1, huffcode, depth+1, maxd, fnt);
+
+    SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, TRANS);
+
+    if(depth){
+        this = getDrawPos(huffcode, depth, maxd);
+        parent = getDrawPos(huffcode>>1, depth-1, maxd);
+
+        SDL_RenderDrawLine(sw->renderer, parent.x, parent.y,
+                                this.x, this.y);
+
+        if(n->chr){
+            if(n->bit==0){
+                this.x -= FNTWIDTH;
+            }
+
+            Neill_SDL_DrawChar(sw, fnt, n->chr, this.x, this.y);
+        }
+    }
+
+}
 
 cart getDrawPos(unsigned huffcode, unsigned depth, unsigned maxdepth)
 {
     unsigned membrs;
     cart coord;
+    membrs = cheap_pow(2, depth) + 1;
+    coord.x = ((huffcode+1) * WIN_W / membrs);
+    coord.y = (depth * (WIN_H - PAD_H) / maxdepth);
 
-    membrs = cheap_pow(2, depth);
-    printf("membrs: %d\n",membrs);
-    coord.x = (int) (huffcode * DRAW_W / membrs);
-    coord.y = (int)((maxdepth -depth) * DRAW_H / maxdepth);
     return coord;
 }
 
-void drawEdge(SDL_Simplewin *sw, unsigned huffcode, unsigned depth,
-        unsigned maxdepth)
-{
-    cart parent, this;
-
-    this = getDrawPos(huffcode, depth, maxdepth);
-    parent =  getDrawPos(huffcode>>1, depth-1, maxdepth);
-
-    printf(" huff %u, huff>> %u, depth %u, maxdepth %u ",
-                huffcode, huffcode>>1, depth, maxdepth);
-    printf(" %d,%d : %d,%d\n", parent.x, parent.y, this.x, this.y);
-
-    SDL_RenderDrawLine(sw->renderer, parent.x, parent.y, this.x, this.y);
-
-}
 
 unsigned cheap_pow(unsigned base, unsigned exp)
 {
@@ -158,7 +164,8 @@ void SDL_myInit(SDL_Simplewin *sw)
                             SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED,
                             WIN_W, WIN_H,
-                            SDL_WINDOW_INPUT_GRABBED);
+                            /*SDL_WINDOW_INPUT_GRABBED*/
+                            0);
     if(sw->win == NULL){
       fprintf(stderr, "\nUnable to initialize SDL Window:  %s\n", SDL_GetError());
       SDL_Quit();
@@ -181,9 +188,10 @@ void SDL_myInit(SDL_Simplewin *sw)
 }
 
 
-/* Temporary measure - taken wholesale from neillsdl2
-    TODO: replace with clickable button to exit
-*/
+
+
+
+/* taken wholesale from neillsdl2 */
 
 void Neill_SDL_Events(SDL_Simplewin *sw)
 {
@@ -197,4 +205,66 @@ void Neill_SDL_Events(SDL_Simplewin *sw)
              sw->finished = 1;
        }
     }
+}
+
+
+void Neill_SDL_ReadFont(fntrow fontdata[FNTCHARS][FNTHEIGHT], char *fname)
+{
+
+    FILE *fp = fopen(fname, "rb");
+    size_t itms;
+    if(!fp){
+       fprintf(stderr, "Can't open Font file %s\n", fname);
+       exit(1);
+   }
+   itms = fread(fontdata, sizeof(fntrow), FNTCHARS*FNTHEIGHT, fp);
+   if(itms != FNTCHARS*FNTHEIGHT){
+       fprintf(stderr, "Can't read all Font file %s (%d) \n", fname, (int)itms);
+       exit(1);
+   }
+   fclose(fp);
+
+}
+
+
+void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy)
+{
+
+   unsigned x, y;
+   for(y = 0; y < FNTHEIGHT; y++){
+      for(x = 0; x < FNTWIDTH; x++){
+         if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
+            /*printf("*");*/
+            /* White Ink */
+            Neill_SDL_SetDrawColour(sw, 255, 255, 255);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
+         }
+         else{
+            /*printf(".");*/
+            /* Black Ink */
+            Neill_SDL_SetDrawColour(sw, 0, 0, 0);
+            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
+         }
+      }
+   }
+
+}
+
+void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy)
+{
+
+   int i=0;
+   unsigned char chr;
+   do{
+      chr = str[i++];
+      Neill_SDL_DrawChar(sw, fontdata, chr, ox+i*FNTWIDTH, oy);
+   }while(str[i]);
+}
+
+
+void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, Uint8 r, Uint8 g, Uint8 b)
+{
+
+   SDL_SetRenderDrawColor(sw->renderer, r, g, b, SDL_ALPHA_OPAQUE);
+
 }
