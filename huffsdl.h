@@ -15,15 +15,17 @@ Description: header for huffman tree printing functions
 #define PAD_W 10u
 #define PAD_H 30u
 #define DRAWDELAY 20
+#define CIRCRAD 8
+#define CIRCLEPOINTS 100.0
 
 
 /*colours */
 #define COLOURS 256
 #define COL_WIN_BG   0u, 0u, 0u
-#define COL_WHITE    127u, 127u, 127u
+#define COL_WHITE    255u, 255u, 255u
 
-#define TRANS   127u
-#define OPAQUE  127u
+#define TRANS   80u
+#define OPAQUE  255u
 
 /* Font stuff (from neillsdl2.h*/
 typedef unsigned short fntrow;
@@ -67,7 +69,7 @@ void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
 cart getDrawPos(unsigned huffcode, unsigned depth, unsigned maxdepth);
 
 unsigned cheap_pow(unsigned base, unsigned exp);
-
+void drawCirc(SDL_Simplewin *sw, cart centre, int radius);
 void SDL_myInit(SDL_Simplewin *sw);
 
 /*taken wholesale from neillsdl2.h */
@@ -76,3 +78,4 @@ void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT],
 void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy);
 void Neill_SDL_ReadFont(fntrow fontdata[FNTCHARS][FNTHEIGHT], char *fname);
 void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, Uint8 r, Uint8 g, Uint8 b);
+void Neill_SDL_RenderFillCircle(SDL_Renderer *rend, int cx, int cy, int r);

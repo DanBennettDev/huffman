@@ -4,10 +4,14 @@ File: huffsdl.c
 Description: functions for huffman tree drawing
 
 todo:
-    write letters
-    tidy SDL struct, huffcode, depth, maxdepth into substruct
-    have mouseover on vertexes so they report huffcode
+    Rewrite Neill's functions for variable colour & ditch his colour set func
+    Make draw list and draw from that
+    Use draw list to work out nearest neighbour & tidy spacing
     exit button
+    Make circle only draw No of dots required
+
+    have mouseover on vertexes so they report huffcode
+    tidy SDL struct, huffcode, depth, maxdepth into substruct
 
 */
 
@@ -34,7 +38,7 @@ int main(int argc, char *argv[])
 
     root = buildTree(q);
 
-    /* VISUALISATION */
+    /************* VISUALISATION ****************/
     /*set up screen*/
     SDL_myInit(&sw);
     Neill_SDL_ReadFont(font, FONTFILE);
@@ -56,6 +60,10 @@ int main(int argc, char *argv[])
     }
     while (!sw.finished);
 
+    /************* VISUALISATION END ************/
+
+
+
     /* Clear up graphics subsystems */
     SDL_DestroyWindow(sw.win);
     atexit(SDL_Quit);
@@ -67,6 +75,8 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+
 
 
 unsigned getDepth(node *n, unsigned d)
@@ -83,6 +93,24 @@ unsigned getDepth(node *n, unsigned d)
 }
 
 
+/* I wanted a 1 pixel circle */
+void drawCirc(SDL_Simplewin *sw, cart centre, int radius)
+{
+    double angle;
+    int points = CIRCLEPOINTS, x, y, xprev=-1, yprev=-1;
+
+    while(points-- > 0){
+        angle = ((double)points / CIRCLEPOINTS) * 2 * M_PI;
+        x = centre.x + radius * cos(angle);
+        y = centre.y + radius * sin(angle);
+        if(x!=xprev || y!=yprev){
+            SDL_RenderDrawPoint(sw->renderer, x, y);
+            yprev=y, xprev=x;
+        }
+    }
+}
+
+
 void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
                 unsigned maxd, fntrow fnt[FNTCHARS][FNTHEIGHT])
 {
@@ -91,18 +119,17 @@ void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
         return;
     }
 
-
     huffcode = (huffcode<<1) + n->bit;
 
     drawTree(sw, n->c0, huffcode, depth+1, maxd, fnt);
     drawTree(sw, n->c1, huffcode, depth+1, maxd, fnt);
 
-    SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, TRANS);
 
     if(depth){
         this = getDrawPos(huffcode, depth, maxd);
         parent = getDrawPos(huffcode>>1, depth-1, maxd);
 
+        SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, OPAQUE);
         SDL_RenderDrawLine(sw->renderer, parent.x, parent.y,
                                 this.x, this.y);
 
@@ -112,9 +139,14 @@ void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
             }
 
             Neill_SDL_DrawChar(sw, fnt, n->chr, this.x, this.y);
+        } else {
+            SDL_SetRenderDrawColor(sw->renderer, COL_WIN_BG, OPAQUE);
+            Neill_SDL_RenderFillCircle(sw->renderer, this.x, this.y, CIRCRAD);
+            SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, OPAQUE);
+            drawCirc(sw, this, CIRCRAD);
         }
-    }
 
+    }
 }
 
 cart getDrawPos(unsigned huffcode, unsigned depth, unsigned maxdepth)
@@ -268,3 +300,19 @@ void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, Uint8 r, Uint8 g, Uint8 b)
    SDL_SetRenderDrawColor(sw->renderer, r, g, b, SDL_ALPHA_OPAQUE);
 
 }
+
+
+/* Filled Circle centred at (cx,cy) of radius r, see :
+   http://content.gpwiki.org/index.php/SDL:Tutorials:Drawing_and_Filling_Circles */
+void Neill_SDL_RenderFillCircle(SDL_Renderer *rend, int cx, int cy, int r)
+{
+
+   double dy;
+   for (dy = 1; dy <= r; dy += 1.0) {
+        double dx = floor(sqrt((2.0 * r * dy) - (dy * dy)));
+        SDL_RenderDrawLine(rend, cx-dx, cy+r-dy, cx+dx, cy+r-dy);
+        SDL_RenderDrawLine(rend, cx-dx, cy-r+dy, cx+dx, cy-r+dy);
+   }
+
+}
+
