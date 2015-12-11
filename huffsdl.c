@@ -10,6 +10,10 @@ see: Tidier Drawings of Trees
 
 todo:
     Reingold Tilson tree drawing
+        Record Y coord from bottom (use y in rt)
+
+
+
 
     Tidy up:
         clear out old code
@@ -91,19 +95,19 @@ int main(int argc, char *argv[])
 /* pass 1 :
 
 */
-threads rt_draw_1(node *this)
+rt rt_draw_1(node *this)
 {
     /* TODO handle 1 child case */
-    threads threadL, threadR;
+    rt stateL, stateR;
     double centre;
 
     if(this==NULL){
-        threadL.l = threadL.r = NULL;
-        return threadL;
+        stateL.lthread = stateL.rthread = NULL;
+        return stateL;
     }
 
-    threadL = rt_draw_1(this->c0);
-    threadR = rt_draw_1(this->c1);
+    stateL = rt_draw_1(this->c0);
+    stateR = rt_draw_1(this->c1);
 
     /* assign raw x value & mod for children*/
     this->x = (this->parent->c0 == this) ?
@@ -124,57 +128,57 @@ threads rt_draw_1(node *this)
 
     /* task 3 of R-T pass1 - add "thread" for contour tracking */
     if(this->c1 != NULL && this->c0 != NULL && this->c0->y != this->c1->y){
-        rt_1_make_thread(this, threadL, threadR);
+        rt_1_make_thread(this, stateL, stateR);
     }
 
 
     /* task 2 of R-T pass1 - track "thread" candidates */
-    return rt_1_track_threads(this, threadL, threadR);
+    return rt_1_track_threads(this, stateL, stateR);
 }
 
 
-threads rt_1_track_threads(node *this, threads thL, threads thR)
+rt rt_1_track_threads(node *this, rt threadL, rt threadR)
 {
-    threads thRet;
+    rt ret;
 
     /* handle leaf/ non-full nodes*/
-    if(thL.l==NULL) {
-        thL.l = this;
+    if(threadL.lthread==NULL) {
+        threadL.lthread = this;
     }
-    if(thL.r==NULL) {
-        thL.r = this;
+    if(threadL.rthread==NULL) {
+        threadL.rthread = this;
     }
-    if(thR.l==NULL) {
-        thR.l = this;
+    if(threadR.lthread==NULL) {
+        threadR.lthread = this;
     }
-    if(thR.r==NULL) {
-        thR.r = this;
+    if(threadR.rthread==NULL) {
+        threadR.rthread = this;
     }
 
     /* pick leftmost node on the lowest level */
-    if( thL.l->y == thR.l->y ){
-        thRet.l = thL.l->x <= thR.l->x ? thL.l : thR.l;
+    if( threadL.lthread->y == threadR.lthread->y ){
+        ret.lthread = threadL.lthread->x <= threadR.lthread->x ? threadL.lthread : threadR.lthread;
     } else {
-        thRet.l = thL.l->y >= thR.l->y ? thL.l : thR.l;
+        ret.lthread = threadL.lthread->y >= threadR.lthread->y ? threadL.lthread : threadR.lthread;
     }
 
     /* pick rightmost node on the lowest level */
-    if(thL.r->y == thR.r->y ){
-        thRet.r = thL.r->x >= thR.r->x ? thL.r : thR.r;
+    if(threadL.rthread->y == threadR.rthread->y ){
+        ret.rthread = threadL.rthread->x >= threadR.rthread->x ? threadL.rthread : threadR.rthread;
     } else {
-        thRet.r = thL.r->y >= thR.r->y ? thL.r : thR.r;
+        ret.rthread = threadL.rthread->y >= threadR.rthread->y ? threadL.rthread : threadR.rthread;
     }
 
-    return thRet;
+    return ret;
 }
 
 
-void rt_1_make_thread(node *this, threads thL, threads thR)
+void rt_1_make_thread(node *this, rt threadL, rt threadR)
 {
     if(this->c0->y > this->c1->y){
-        thR.r->thread = thL.r;
+        threadR.rthread->thread = threadL.rthread;
     } else {
-        thL.l->thread = thR.l;
+        threadL.lthread->thread = threadR.lthread;
     }
 }
 

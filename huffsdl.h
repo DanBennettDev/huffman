@@ -71,16 +71,17 @@ typedef struct Cartesian {
 }   cart;
 
 
-typedef struct Threads {
-    node *l;
-    node *r;
-} threads;
+typedef struct reingoldTilford {
+    node *lthread;
+    node *rthread;
+    int y;
+} rt;
 
 
 
 /* Tilford-Reingold functions */
-threads rt_1_track_threads(node *this, threads thL, threads thR);
-void rt_1_make_thread(node *this, threads thL, threads thR);
+rt rt_1_track_threads(node *this, rt threadL, rt threadR);
+void rt_1_make_thread(node *this, rt threadL, rt threadR);
 
 /* drawing functions */
 void drawCirc(SDL_Simplewin *sw, cart centre, int radius);
