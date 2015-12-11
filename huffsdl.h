@@ -14,10 +14,10 @@ Description: header for huffman tree printing functions
 #define WIN_H 1000u
 #define PAD_W 10u
 #define PAD_H 30u
-#define DRAWDELAY 20
-#define CIRCRAD 8
-#define CIRCLEPOINTS 100.0
+#define SDL_LOOP_DELAY 20
 
+#define FLOATMARGIN 0.00001
+#define floatEqual(a, b)  abs(a-b) < FLOATMARGIN ? 1 : 0
 
 /*colours */
 #define COLOURS 256
@@ -26,6 +26,14 @@ Description: header for huffman tree printing functions
 
 #define TRANS   80u
 #define OPAQUE  255u
+
+
+/* layout */
+#define SIBLING_SPACE 2
+#define CIRCRAD 8
+#define CIRCLEPOINTS 100.0
+
+
 
 /* Font stuff (from neillsdl2.h*/
 typedef unsigned short fntrow;
@@ -63,12 +71,18 @@ typedef struct Cartesian {
 }   cart;
 
 
-unsigned getDepth(node *n, unsigned d);
-void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
-                unsigned maxd, fntrow fnt[FNTCHARS][FNTHEIGHT]);
-cart getDrawPos(unsigned huffcode, unsigned depth, unsigned maxdepth);
+typedef struct Threads {
+    node *l;
+    node *r;
+} threads;
 
-unsigned cheap_pow(unsigned base, unsigned exp);
+
+
+/* Tilford-Reingold functions */
+threads rt_1_track_threads(node *this, threads thL, threads thR);
+void rt_1_make_thread(node *this, threads thL, threads thR);
+
+/* drawing functions */
 void drawCirc(SDL_Simplewin *sw, cart centre, int radius);
 void SDL_myInit(SDL_Simplewin *sw);
 

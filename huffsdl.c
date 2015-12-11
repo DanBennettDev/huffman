@@ -3,16 +3,21 @@ File: huffsdl.c
 
 Description: functions for huffman tree drawing
 
+Recursive implementation of Reingold-Tilford tree layout
+see: Tidier Drawings of Trees
+     Reingold & Tilford
+     IEE Transactions on Software Engineering Vol SE-7 No2 March 1981
+
 todo:
-    Rewrite Neill's functions for variable colour & ditch his colour set func
-    Make draw list and draw from that
-    Use draw list to work out nearest neighbour & tidy spacing
-    exit button
-    Make circle only draw No of dots required
+    Reingold Tilson tree drawing
 
+    Tidy up:
+        clear out old code
+        strip out Neill's function and link to his files instead
     have mouseover on vertexes so they report huffcode
-    tidy SDL struct, huffcode, depth, maxdepth into substruct
 
+    exit button
+    more efficient 1px circle method.
 */
 
 #include "huffsdl.h"
@@ -21,7 +26,6 @@ int main(int argc, char *argv[])
 {
     node *chars, *q=NULL, *root;
     SDL_Simplewin sw;
-    unsigned maxdepth;
     fntrow font[FNTCHARS][FNTHEIGHT];
 
 
@@ -43,12 +47,16 @@ int main(int argc, char *argv[])
     SDL_myInit(&sw);
     Neill_SDL_ReadFont(font, FONTFILE);
 
-
+/*  OLD DRAWING METHOD
     maxdepth = getDepth(root, 0);
     drawTree(&sw, root, 0, 0, maxdepth, font);
+*/
+
+
+
 
     /* update window once */
-    SDL_Delay(DRAWDELAY);
+    SDL_Delay(SDL_LOOP_DELAY);
     SDL_RenderPresent(sw.renderer);
     SDL_UpdateWindowSurface(sw.win);
 
@@ -78,22 +86,104 @@ int main(int argc, char *argv[])
 
 
 
+/*  Reingold-Tilford tree layout implementation */
 
-unsigned getDepth(node *n, unsigned d)
+/* pass 1 :
+
+*/
+threads rt_draw_1(node *this)
 {
-    unsigned d0, d1;
-    if(n==NULL){
-        return d-1;
+    /* TODO handle 1 child case */
+    threads threadL, threadR;
+    double centre;
+
+    if(this==NULL){
+        threadL.l = threadL.r = NULL;
+        return threadL;
     }
 
-    d0 = getDepth(n->c0 ,d+1);
-    d1 = getDepth(n->c1 ,d+1);
+    threadL = rt_draw_1(this->c0);
+    threadR = rt_draw_1(this->c1);
 
-    return d0 > d1 ? d0: d1;
+    /* assign raw x value & mod for children*/
+    this->x = (this->parent->c0 == this) ?
+                0 : this->parent->c0->x + SIBLING_SPACE;
+
+    if(this->c0!=NULL && this->c1!=NULL){
+    /* centre above children */
+        centre = this->c1->x - this->c0->x;
+
+        if(this->parent->c0 == this){
+            this->x = centre;
+        } else {
+            this->off = this->x - centre;
+        }
+    }
+
+
+
+    /* task 3 of R-T pass1 - add "thread" for contour tracking */
+    if(this->c1 != NULL && this->c0 != NULL && this->c0->y != this->c1->y){
+        rt_1_make_thread(this, threadL, threadR);
+    }
+
+
+    /* task 2 of R-T pass1 - track "thread" candidates */
+    return rt_1_track_threads(this, threadL, threadR);
 }
 
 
-/* I wanted a 1 pixel circle */
+threads rt_1_track_threads(node *this, threads thL, threads thR)
+{
+    threads thRet;
+
+    /* handle leaf/ non-full nodes*/
+    if(thL.l==NULL) {
+        thL.l = this;
+    }
+    if(thL.r==NULL) {
+        thL.r = this;
+    }
+    if(thR.l==NULL) {
+        thR.l = this;
+    }
+    if(thR.r==NULL) {
+        thR.r = this;
+    }
+
+    /* pick leftmost node on the lowest level */
+    if( thL.l->y == thR.l->y ){
+        thRet.l = thL.l->x <= thR.l->x ? thL.l : thR.l;
+    } else {
+        thRet.l = thL.l->y >= thR.l->y ? thL.l : thR.l;
+    }
+
+    /* pick rightmost node on the lowest level */
+    if(thL.r->y == thR.r->y ){
+        thRet.r = thL.r->x >= thR.r->x ? thL.r : thR.r;
+    } else {
+        thRet.r = thL.r->y >= thR.r->y ? thL.r : thR.r;
+    }
+
+    return thRet;
+}
+
+
+void rt_1_make_thread(node *this, threads thL, threads thR)
+{
+    if(this->c0->y > this->c1->y){
+        thR.r->thread = thL.r;
+    } else {
+        thL.l->thread = thR.l;
+    }
+}
+
+
+
+
+
+/* less efficient for unfilled circle, but I wanted a
+    1px circle outline. Quick and dirty. */
 void drawCirc(SDL_Simplewin *sw, cart centre, int radius)
 {
     double angle;
@@ -110,6 +200,10 @@ void drawCirc(SDL_Simplewin *sw, cart centre, int radius)
     }
 }
 
+
+/*
+
+first, simpleminded effort - deals badly  with dense lower layers
 
 void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
                 unsigned maxd, fntrow fnt[FNTCHARS][FNTHEIGHT])
@@ -149,6 +243,22 @@ void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
     }
 }
 
+
+
+unsigned getDepth(node *n, unsigned d)
+{
+    unsigned d0, d1;
+    if(n==NULL){
+        return d-1;
+    }
+
+    d0 = getDepth(n->c0 ,d+1);
+    d1 = getDepth(n->c1 ,d+1);
+
+    return d0 > d1 ? d0: d1;
+}
+
+
 cart getDrawPos(unsigned huffcode, unsigned depth, unsigned maxdepth)
 {
     unsigned membrs;
@@ -173,6 +283,7 @@ unsigned cheap_pow(unsigned base, unsigned exp)
     }
     return ret;
 }
+*/
 
 
 /* 90% taken from neillsdl2
@@ -223,7 +334,7 @@ void SDL_myInit(SDL_Simplewin *sw)
 
 
 
-/* taken wholesale from neillsdl2 */
+/* the rest taken unchanged from neillsdl2 */
 
 void Neill_SDL_Events(SDL_Simplewin *sw)
 {
