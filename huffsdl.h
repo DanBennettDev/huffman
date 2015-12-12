@@ -16,8 +16,6 @@ Description: header for huffman tree printing functions
 #define PAD_H 30u
 #define SDL_LOOP_DELAY 20
 
-#define FLOATMARGIN 0.00001
-#define floatEqual(a, b)  abs(a-b) < FLOATMARGIN ? 1 : 0
 
 /*colours */
 #define COLOURS 256
@@ -80,8 +78,8 @@ typedef struct reingoldTilford {
 
 
 /* Tilford-Reingold functions */
-rt rt_1_track_threads(node *this, rt threadL, rt threadR);
-void rt_1_make_thread(node *this, rt threadL, rt threadR);
+rt rt_1_trackThreads(node *this, rt threadL, rt threadR);
+void rt_1_makeThread(node *this, rt threadL, rt threadR);
 
 /* drawing functions */
 void drawCirc(SDL_Simplewin *sw, cart centre, int radius);

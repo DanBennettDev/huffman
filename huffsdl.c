@@ -11,6 +11,9 @@ see: Tidier Drawings of Trees
 todo:
     Reingold Tilson tree drawing
         Record Y coord from bottom (use y in rt)
+        part 1 of rT pass 1
+        Test pass1
+        pass 2 (etc.?)
 
 
 
@@ -120,7 +123,7 @@ rt rt_draw_1(node *this)
         if(this->parent->c0 == this){
             this->x = centre;
         } else {
-            this->off = this->x - centre;
+            this->offset = this->x - centre;
         }
     }
 
@@ -128,57 +131,96 @@ rt rt_draw_1(node *this)
 
     /* task 3 of R-T pass1 - add "thread" for contour tracking */
     if(this->c1 != NULL && this->c0 != NULL && this->c0->y != this->c1->y){
-        rt_1_make_thread(this, stateL, stateR);
+        rt_1_makeThread(this, stateL, stateR);
     }
 
 
     /* task 2 of R-T pass1 - track "thread" candidates */
-    return rt_1_track_threads(this, stateL, stateR);
+    return rt_1_trackThreads(this, stateL, stateR);
 }
 
 
-rt rt_1_track_threads(node *this, rt threadL, rt threadR)
+int rt_getSeparation(node *this)
+{
+    node *thisL=this->c0, *thisR=this->c1;
+    double offL=this->offset, offR=this->offset, sep = SIBLING_SPACE;
+
+    while(thisL!=NULL && thisR!=NULL){
+
+
+        /* L Branch R contour */
+        if(thisL->c1!=NULL){
+            thisL = thisL->c1;
+        } else if (thisL->c0!=NULL){
+            thisL = thisL->c0;
+        } else {
+            thisL = thisL->thread;
+        }
+        offL+=this->offset;
+
+        /* R Branch L contour */
+        if(thisL->c1!=NULL){
+            thisL = thisL->c1;
+        } else if (thisL->c0!=NULL){
+            thisL = thisL->c0;
+        } else {
+            thisL = thisL->thread;
+        }
+        offR+=this->offset;
+    }
+
+    return (offL + thisL->x) - (offR + thisR->x) + SIBLING_SPACE;
+}
+
+
+
+rt rt_1_trackThreads(node *this, rt left, rt right)
 {
     rt ret;
 
     /* handle leaf/ non-full nodes*/
-    if(threadL.lthread==NULL) {
-        threadL.lthread = this;
+    if(left.lthread==NULL) {
+        left.lthread = this;
     }
-    if(threadL.rthread==NULL) {
-        threadL.rthread = this;
+    if(left.rthread==NULL) {
+        left.rthread = this;
     }
-    if(threadR.lthread==NULL) {
-        threadR.lthread = this;
+    if(right.lthread==NULL) {
+        right.lthread = this;
     }
-    if(threadR.rthread==NULL) {
-        threadR.rthread = this;
+    if(right.rthread==NULL) {
+        right.rthread = this;
     }
 
     /* pick leftmost node on the lowest level */
-    if( threadL.lthread->y == threadR.lthread->y ){
-        ret.lthread = threadL.lthread->x <= threadR.lthread->x ? threadL.lthread : threadR.lthread;
+    if( left.lthread->y == right.lthread->y ){
+        ret.lthread = left.lthread->x <= right.lthread->x ?
+                                        left.lthread : right.lthread;
     } else {
-        ret.lthread = threadL.lthread->y >= threadR.lthread->y ? threadL.lthread : threadR.lthread;
+        ret.lthread = left.lthread->y >= right.lthread->y ?
+                                        left.lthread : right.lthread;
     }
 
     /* pick rightmost node on the lowest level */
-    if(threadL.rthread->y == threadR.rthread->y ){
-        ret.rthread = threadL.rthread->x >= threadR.rthread->x ? threadL.rthread : threadR.rthread;
+    if(left.rthread->y == right.rthread->y ){
+        ret.rthread = left.rthread->x >= right.rthread->x ?
+                                        left.rthread : right.rthread;
     } else {
-        ret.rthread = threadL.rthread->y >= threadR.rthread->y ? threadL.rthread : threadR.rthread;
+        ret.rthread = left.rthread->y >= right.rthread->y ?
+                                        left.rthread : right.rthread;
     }
 
     return ret;
 }
 
 
-void rt_1_make_thread(node *this, rt threadL, rt threadR)
+void rt_1_makeThread(node *this, rt left, rt right)
 {
+    /* need to adjust - from penultimate to bottom)*/
     if(this->c0->y > this->c1->y){
-        threadR.rthread->thread = threadL.rthread;
+        right.rthread->thread = left.rthread;
     } else {
-        threadL.lthread->thread = threadR.lthread;
+        left.lthread->thread = right.lthread;
     }
 }
 

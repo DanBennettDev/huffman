@@ -30,11 +30,11 @@ typedef struct Node {
                 int bit;
                 double x;       /* for sdl vis */
                 int y;       /* for sdl vis */
-                double off;     /* for sdl vis */
+                double offset;     /* for sdl vis */
                 struct Node *parent;
                 struct Node *c0;
                 struct Node *c1;
-                struct Node *thread;    /* for sdl vis */
+                struct Node *contour;    /* for sdl vis */
                 struct Node *qNext;
 } node;
 
