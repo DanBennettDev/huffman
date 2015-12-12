@@ -69,11 +69,12 @@ typedef struct Cartesian {
 }   cart;
 
 
-typedef struct reingoldTilford {
-    node *lthread;
-    node *rthread;
+typedef struct Contour {
+    node *xmin;
+    node *xmax;
     int y;
-} rt;
+    node *next;
+} contour;
 
 
 

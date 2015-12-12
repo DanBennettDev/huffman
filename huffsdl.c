@@ -15,7 +15,7 @@ todo:
         Test pass1
         pass 2 (etc.?)
 
-
+    Change colours so it's an Xmas binary tree.
 
 
     Tidy up:
@@ -98,130 +98,103 @@ int main(int argc, char *argv[])
 /* pass 1 :
 
 */
-rt rt_draw_1(node *this)
+contour *rt_draw_1(node *this)
 {
     /* TODO handle 1 child case */
-    rt stateL, stateR;
-    double centre;
+    contour *contL, *contR, *cont;
+    double space;
 
     if(this==NULL){
         stateL.lthread = stateL.rthread = NULL;
         return stateL;
     }
 
-    stateL = rt_draw_1(this->c0);
-    stateR = rt_draw_1(this->c1);
+    contL = rt_draw_1(this->c0);
+    contR = rt_draw_1(this->c1);
 
-    /* assign raw x value & mod for children*/
-    this->x = (this->parent->c0 == this) ?
-                0 : this->parent->c0->x + SIBLING_SPACE;
+    space = rt_1_pushApart(contL, contR);
+    /* handle space - do I need to shift right member
+       how do I centre parent?
+    */
 
-    if(this->c0!=NULL && this->c1!=NULL){
-    /* centre above children */
-        centre = this->c1->x - this->c0->x;
-
-        if(this->parent->c0 == this){
-            this->x = centre;
-        } else {
-            this->offset = this->x - centre;
-        }
-    }
-
-
-
-    /* task 3 of R-T pass1 - add "thread" for contour tracking */
-    if(this->c1 != NULL && this->c0 != NULL && this->c0->y != this->c1->y){
-        rt_1_makeThread(this, stateL, stateR);
-    }
-
-
-    /* task 2 of R-T pass1 - track "thread" candidates */
-    return rt_1_trackThreads(this, stateL, stateR);
+    cont = rt_1_trackContour(this, contL, contR);
+    return cont
 }
 
 
-int rt_getSeparation(node *this)
+double rt_1_pushApart(contour *l, contour *r)
 {
-    node *thisL=this->c0, *thisR=this->c1;
-    double offL=this->offset, offR=this->offset, sep = SIBLING_SPACE;
+    double push = 0;
 
-    while(thisL!=NULL && thisR!=NULL){
-
-
-        /* L Branch R contour */
-        if(thisL->c1!=NULL){
-            thisL = thisL->c1;
-        } else if (thisL->c0!=NULL){
-            thisL = thisL->c0;
-        } else {
-            thisL = thisL->thread;
+    while(l!=NULL && r!=NULL){
+        if(l->xmax > r->xmin + SIBLING_SPACE){
+            push = (l->xmax - r->xmin) + SIBLING_SPACE;
         }
-        offL+=this->offset;
 
-        /* R Branch L contour */
-        if(thisL->c1!=NULL){
-            thisL = thisL->c1;
-        } else if (thisL->c0!=NULL){
-            thisL = thisL->c0;
-        } else {
-            thisL = thisL->thread;
-        }
-        offR+=this->offset;
+        l=l->next;
+        r=r->next;
     }
-
-    return (offL + thisL->x) - (offR + thisR->x) + SIBLING_SPACE;
+    return push;
 }
 
 
 
-rt rt_1_trackThreads(node *this, rt left, rt right)
+contour *rt_1_trackContour(node *this, contour *l, contour *r)
 {
-    rt ret;
+    /*  combines task 2 and task 3 of RT pass 1
+        (for recursive seems to make more sense to do together
+         and using linked list rather than following threads) */
 
-    /* handle leaf/ non-full nodes*/
-    if(left.lthread==NULL) {
-        left.lthread = this;
-    }
-    if(left.rthread==NULL) {
-        left.rthread = this;
-    }
-    if(right.lthread==NULL) {
-        right.lthread = this;
-    }
-    if(right.rthread==NULL) {
-        right.rthread = this;
-    }
+    /*  keep linked list of rt structs
+        first item = this level (insert now)
+        each item reports level min and max
+        in this function compare the items, 1 by 1 and get new linked list
+        then insert {this, this} as contour for this level.
+    */
+    contour *ret, *temp;
+    node xmin, xmax;
+    double ymax, offl, offr;
 
-    /* pick leftmost node on the lowest level */
-    if( left.lthread->y == right.lthread->y ){
-        ret.lthread = left.lthread->x <= right.lthread->x ?
-                                        left.lthread : right.lthread;
-    } else {
-        ret.lthread = left.lthread->y >= right.lthread->y ?
-                                        left.lthread : right.lthread;
-    }
+    /*add this level*/
+    rt_1_addContour(ret, this->y, this, this);
 
-    /* pick rightmost node on the lowest level */
-    if(left.rthread->y == right.rthread->y ){
-        ret.rthread = left.rthread->x >= right.rthread->x ?
-                                        left.rthread : right.rthread;
-    } else {
-        ret.rthread = left.rthread->y >= right.rthread->y ?
-                                        left.rthread : right.rthread;
-    }
+    while(l!=NULL || r!=NULL){
+        /* continue to the bottom of tree even if depths are unequal*/
+        r = r==NULL ? l : r;
+        l = l==NULL ? r : l;
 
+        ymax = l.y > r.y ? l.y : r.y;
+        xmin = this->offset + (l.xmin.x < r.xmin.x ? l.xmin : r.xmin);
+        xmax = this->offset + (l.xmax.x > r.xmax.x ? l.xmax : r.xmax);
+
+        addContour(ret, ymax, xmin, xmax);
+        temp = l;
+        l = l->next;
+        free(temp);
+        temp = r;
+        r = r->next;
+        free(temp);
+    }
     return ret;
 }
 
-
-void rt_1_makeThread(node *this, rt left, rt right)
+void rt_1_addContour(node *top, double y, node *xmin, node *xmax)
 {
-    /* need to adjust - from penultimate to bottom)*/
-    if(this->c0->y > this->c1->y){
-        right.rthread->thread = left.rthread;
-    } else {
-        left.lthread->thread = right.lthread;
+    contour cont;
+
+    myCalloc(cont, 1, sizeof(contour), MEMERR);
+    cont->xmin = xmin;
+    cont->xmax = xmax;
+    cont->y = y;
+
+    if(top==NULL){
+        top->next = cont;
+        return;
     }
+    while(top->next!=NULL){
+        top= top->next;
+    }
+    cont->next = cont;
 }
 
 
@@ -247,97 +220,6 @@ void drawCirc(SDL_Simplewin *sw, cart centre, int radius)
 }
 
 
-/*
-
-first, simpleminded effort - deals badly  with dense lower layers
-
-void drawTree(SDL_Simplewin *sw, node *n, unsigned huffcode, unsigned depth,
-                unsigned maxd, fntrow fnt[FNTCHARS][FNTHEIGHT])
-{
-    cart this, parent;
-    if(n==NULL){
-        return;
-    }
-
-    huffcode = (huffcode<<1) + n->bit;
-
-    drawTree(sw, n->c0, huffcode, depth+1, maxd, fnt);
-    drawTree(sw, n->c1, huffcode, depth+1, maxd, fnt);
-
-
-    if(depth){
-        this = getDrawPos(huffcode, depth, maxd);
-        parent = getDrawPos(huffcode>>1, depth-1, maxd);
-
-        SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, OPAQUE);
-        SDL_RenderDrawLine(sw->renderer, parent.x, parent.y,
-                                this.x, this.y);
-
-        if(n->chr){
-            if(n->bit==0){
-                this.x -= FNTWIDTH;
-            }
-
-            Neill_SDL_DrawChar(sw, fnt, n->chr, this.x, this.y);
-        } else {
-            SDL_SetRenderDrawColor(sw->renderer, COL_WIN_BG, OPAQUE);
-            Neill_SDL_RenderFillCircle(sw->renderer, this.x, this.y, CIRCRAD);
-            SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, OPAQUE);
-            drawCirc(sw, this, CIRCRAD);
-        }
-
-    }
-}
-
-
-
-unsigned getDepth(node *n, unsigned d)
-{
-    unsigned d0, d1;
-    if(n==NULL){
-        return d-1;
-    }
-
-    d0 = getDepth(n->c0 ,d+1);
-    d1 = getDepth(n->c1 ,d+1);
-
-    return d0 > d1 ? d0: d1;
-}
-
-
-cart getDrawPos(unsigned huffcode, unsigned depth, unsigned maxdepth)
-{
-    unsigned membrs;
-    cart coord;
-    membrs = cheap_pow(2, depth) + 1;
-    coord.x = ((huffcode+1) * WIN_W / membrs);
-    coord.y = (depth * (WIN_H - PAD_H) / maxdepth);
-
-    return coord;
-}
-
-
-unsigned cheap_pow(unsigned base, unsigned exp)
-{
-    int ret = 1;
-    while(exp){
-        if(exp & 1){
-            ret *= base;
-        }
-        exp >>= 1;
-        base *= base;
-    }
-    return ret;
-}
-*/
-
-
-/* 90% taken from neillsdl2
-changed to:
-    grab input
-    set bg colour from #define
-    allow alpha blending (for mousover huffcode reporting- if I get that far!)
-*/
 
 void SDL_myInit(SDL_Simplewin *sw)
 {
