@@ -10,10 +10,6 @@ expects ASCII / utf-8 text file.
 Knuth visualisation will handle any binary tree
 currently Reingold Tilford vis assumes tree is complete (eg huffman)
 
-
-todo:
-    Reingold Tilford tree layout
-
 */
 
 #include "huffsdl.h"
@@ -37,7 +33,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     printf("\nenter number for layout type:\n");
-    printf("0. Knuth, 1. Reingold-Tilford (with parent centering bug): ");
+    printf("0. Knuth, 1. Reingold-Tilford (with asymm layout bug) :");
 
     while(scanf("%u", &mode)!=1 || mode > 1){
         printf("invalid choice, try again\n");
@@ -95,8 +91,8 @@ void doDisplay(node *tree)
         if(drawcounter>= LIGHT_CHANGE_DELAY){
             drawcounter=0;
             drawTree(&sw, tree, font);
-            Neill_SDL_DrawString(&sw, font, "XMAS (BINARY) TREE",
-                                        PAD_W, PAD_H- FNTHEIGHT);
+            Neill_SDL_DrawString(&sw, font, "Xmas (Binary) Tree",
+                                        0, TITLE_POS);
 
             /* update window once */
             SDL_RenderPresent(sw.renderer);
@@ -235,7 +231,7 @@ contour *rt_draw_1(node *this, int depth)
 {
     /* TODO assumes full tree for the moment: handle 1 child case */
     contour *contL, *contR, *cont;
-    double space, xtemp;
+    double space, xTarget;
 
     if(this==NULL){
         return NULL;
@@ -246,29 +242,35 @@ contour *rt_draw_1(node *this, int depth)
 
     this->y = depth;
 
-    /* pos relative to children */
-    xtemp=0;
+    /* get pos relative to children */
+    xTarget=0;
     if(this->c0!=NULL && this->c1!=NULL){
-        xtemp = (this->c1->x - this-> c0->x)/2;
+        xTarget = this-> c0->x + (this->c1->x - this-> c0->x)/2;
     }
 
-
+    /* If first sibling, centre over children */
     if(this->bit==0){
-        this->x = xtemp;
+        this->x = xTarget;
+    /* if 2nd position relative to sibling and move children to centre */
     } else if(this->parent!=NULL){
         this->x = this->parent->c0->x + RT_SPACE;
-        this->offset = this->x - xtemp;
+        this->offset = this->x - xTarget;
     }
 
+    /* get distance to push nodes apart to fit subtrees */
     space = rt_1_pushApart(contL, contR);
-    printf("%c\n", this->chr);
+    printf("%c, %d\n", this->chr, this->weight);
 
+    /* push apart children and recentre over children*/
     this->x += space/2;
+    this->offset += space/2;
+
     if(this->c1!=NULL){
         this->c1->x += space;
         this->c1->offset += space;
 
     }
+
 
     cont = rt_1_trackContour(this, contL, contR, space);
 
@@ -317,7 +319,11 @@ contour *rt_1_trackContour(node *this, contour *l, contour *r, double space)
 {
     /*  combines task 2 and task 3 of RT pass 1
         (for recursive seems to make more sense to do together
-         and using linked list rather than following threads) */
+         and using linked list of min/mad per level rather
+         than making/ following threads)
+
+        think this is where the issue is. Contours don't look right.
+    */
 
     contour *ret=NULL, *temp;
     double xmin, xmax;
@@ -325,17 +331,16 @@ contour *rt_1_trackContour(node *this, contour *l, contour *r, double space)
     /*add this level*/
     ret = rt_1_addContour(ret, this->x, this->x);
 
-
-
     while(l!=NULL || r!=NULL){
         /* continue to the bottom of tree even if depths are unequal*/
         r = r==NULL ? l : r;
         l = l==NULL ? r : l;
 
         xmin = l->xmin < r->xmin + space ? l->xmin : r->xmin + space;
-        xmax = l->xmax > r->xmax + space ? l->xmax : r->xmax + space;
+        printf("Lmin %f, Rmin %f, min: %f\n", l->xmin, r->xmin, xmin);
 
-        /* apply spacing*/
+        xmax = l->xmax > r->xmax + space ? l->xmax : r->xmax + space;
+        printf("Lmax %f, Rmax %f, max: %f\n", l->xmax, r->xmax, xmax);
 
         ret = rt_1_addContour(ret, xmin, xmax);
 

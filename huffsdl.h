@@ -20,6 +20,7 @@ expects ASCII / utf-8 text file.
 #define WIN_H 800u
 #define PAD_W 10u
 #define PAD_H FNTHEIGHT * 2
+#define TITLE_POS PAD_H / 3
 #define SDL_LOOP_DELAY 20
 
 
