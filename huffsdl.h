@@ -86,6 +86,7 @@ void drawTree(SDL_Simplewin *sw, node *tree,
 
 
 /* drawing functions */
+void doDisplay(node *tree);
 cart getTreeCoord (node *this);
 void SDL_myInit(SDL_Simplewin *sw);
 void setRandColour(SDL_Simplewin *sw);
