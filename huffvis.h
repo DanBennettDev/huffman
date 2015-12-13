@@ -29,6 +29,7 @@ typedef struct Node {
                 int weight;
                 int bit;
                 double x;       /* for sdl vis */
+                double y;
                 double offset;     /* for sdl vis */
                 struct Node *parent;
                 struct Node *c0;

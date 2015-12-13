@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
     node *chars, *q=NULL, *root;
     SDL_Simplewin sw;
     fntrow font[FNTCHARS][FNTHEIGHT];
+    int drawcounter=0;
 
 
 
@@ -54,26 +55,31 @@ int main(int argc, char *argv[])
     SDL_myInit(&sw);
     Neill_SDL_ReadFont(font, FONTFILE);
 
-/*  OLD DRAWING METHOD
-    maxdepth = getDepth(root, 0);
-    drawTree(&sw, root, 0, 0, maxdepth, font);
-*/
-
-
-
-
-    /* update window once */
-    SDL_Delay(SDL_LOOP_DELAY);
-    SDL_RenderPresent(sw.renderer);
-    SDL_UpdateWindowSurface(sw.win);
+    knuth_getCoords(root, 0);
 
     do { /* check for input
             TODO: replace with mouseover check and
             clickable button to exit  */
+        SDL_Delay(SDL_LOOP_DELAY);
+        drawcounter += SDL_LOOP_DELAY;
 
         Neill_SDL_Events(&sw);
+
+        if(drawcounter>= LIGHT_CHANGE_DELAY){
+            drawcounter=0;
+            knuth_drawTree(&sw, root, font);
+            Neill_SDL_DrawString(&sw, font, "XMAS BINARY COMPRESSION TREE",
+                                        PAD_W, PAD_H- FNTHEIGHT);
+
+
+
+            /* update window once */
+            SDL_RenderPresent(sw.renderer);
+            SDL_UpdateWindowSurface(sw.win);
+        }
     }
     while (!sw.finished);
+
 
     /************* VISUALISATION END ************/
 
@@ -92,6 +98,98 @@ int main(int argc, char *argv[])
 }
 
 
+/* Simple Knuth approach
+def knuth_layout(tree, depth):
+    if tree.left_child:
+        knuth_layout(tree.left_child, depth+1)
+    tree.x = i
+    tree.y = depth
+    i += 1
+    if tree.right_child:
+        knuth_layout(tree.right_child, depth+1)
+
+        */
+
+void knuth_getCoords(node *tree, int y)
+{
+    static int x = 0;
+    if(tree==NULL){
+        return;
+    }
+    knuth_getCoords(tree->c0, y+LAYER_HEIGHT);
+    tree->x = x;
+    x+= SIBLING_SPACE;
+    tree->y = y;
+    knuth_getCoords(tree->c1, y+LAYER_HEIGHT);
+}
+
+
+void knuth_drawTree(SDL_Simplewin *sw, node *tree,
+                        fntrow fnt[FNTCHARS][FNTHEIGHT])
+{
+    cart parent, this;
+
+    if(tree==NULL){
+        return;
+    }
+    knuth_drawTree(sw, tree->c0, fnt);
+    knuth_drawTree(sw, tree->c1, fnt);
+
+    if(tree->y > 0){
+        this = getTreeCoord(tree);
+        parent = getTreeCoord(tree->parent);
+
+
+        SDL_SetRenderDrawColor(sw->renderer, COL_TREE_GREEN, OPAQUE);
+        SDL_RenderDrawLine(sw->renderer, parent.x, parent.y,
+                                this.x, this.y);
+
+        if(tree->chr){
+            Neill_SDL_DrawChar(sw, fnt, tree->chr,
+                                 this.x-(FNTWIDTH/2), this.y);
+        } else {
+/*            SDL_SetRenderDrawColor(sw->renderer, COL_WIN_BG, OPAQUE);*/
+            setRandColour(sw);
+            Neill_SDL_RenderFillCircle(sw->renderer, this.x, this.y, CIRCRAD);
+            SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, OPAQUE);
+            /*drawCirc(sw, this, CIRCRAD);*/
+        }
+
+    }
+}
+
+cart getTreeCoord (node *this)
+{
+    cart coord;
+    coord.x = (this->x * FNTHEIGHT) + PAD_W;
+    coord.y = (this->y * FNTWIDTH) + PAD_H;
+
+    return coord;
+}
+
+
+
+void setRandColour(SDL_Simplewin *sw)
+{
+    unsigned cols[LIGHT_COLS][RGB_MMBRS]
+                = {{COL_LIGHT_RED}, {COL_LIGHT_BLUE}, {COL_LIGHT_WHITE},
+                    {COL_LIGHT_GREEN}};
+    int rnd;
+
+    rnd = rand() % LIGHT_COLS;
+
+    SDL_SetRenderDrawColor(sw->renderer,
+                            cols[rnd][0],cols[rnd][1],cols[rnd][2],
+                                OPAQUE);
+}
+
+void initRand(void){
+   time_t now;
+   time(&now);
+   srand((int)now);
+}
+
+
 
 /*  Reingold-Tilford tree layout implementation */
 
@@ -105,8 +203,7 @@ contour *rt_draw_1(node *this)
     double space;
 
     if(this==NULL){
-        stateL.lthread = stateL.rthread = NULL;
-        return stateL;
+        return NULL;
     }
 
     contL = rt_draw_1(this->c0);
@@ -118,7 +215,7 @@ contour *rt_draw_1(node *this)
     */
 
     cont = rt_1_trackContour(this, contL, contR);
-    return cont
+    return cont;
 }
 
 
@@ -134,6 +231,7 @@ double rt_1_pushApart(contour *l, contour *r)
         l=l->next;
         r=r->next;
     }
+
     return push;
 }
 
@@ -152,22 +250,22 @@ contour *rt_1_trackContour(node *this, contour *l, contour *r)
         then insert {this, this} as contour for this level.
     */
     contour *ret, *temp;
-    node xmin, xmax;
-    double ymax, offl, offr;
+    node *xmin, *xmax;
+    double ymax;
 
     /*add this level*/
-    rt_1_addContour(ret, this->y, this, this);
+    rt_1_addContour(ret, this, this);
 
     while(l!=NULL || r!=NULL){
         /* continue to the bottom of tree even if depths are unequal*/
         r = r==NULL ? l : r;
         l = l==NULL ? r : l;
 
-        ymax = l.y > r.y ? l.y : r.y;
-        xmin = this->offset + (l.xmin.x < r.xmin.x ? l.xmin : r.xmin);
-        xmax = this->offset + (l.xmax.x > r.xmax.x ? l.xmax : r.xmax);
+        ymax = l->y > r->y ? l->y : r->y;
+        xmin = l->xmin->x < r->xmin->x ? l->xmin : r->xmin;
+        xmax = l->xmax->x > r->xmax->x ? l->xmax : r->xmax;
 
-        addContour(ret, ymax, xmin, xmax);
+        rt_1_addContour(ret, xmin, xmax);
         temp = l;
         l = l->next;
         free(temp);
@@ -178,20 +276,22 @@ contour *rt_1_trackContour(node *this, contour *l, contour *r)
     return ret;
 }
 
-void rt_1_addContour(node *top, double y, node *xmin, node *xmax)
+void rt_1_addContour(contour *top, node *xmin, node *xmax)
 {
-    contour cont;
+    contour *cont;
 
     myCalloc(cont, 1, sizeof(contour), MEMERR);
     cont->xmin = xmin;
     cont->xmax = xmax;
-    cont->y = y;
+    cont->y = 0;
 
     if(top==NULL){
         top->next = cont;
         return;
     }
+
     while(top->next!=NULL){
+        top->y++;
         top= top->next;
     }
     cont->next = cont;
