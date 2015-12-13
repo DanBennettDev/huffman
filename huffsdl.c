@@ -3,28 +3,13 @@ File: huffsdl.c
 
 Description: functions for huffman tree drawing
 
-Recursive implementation of Reingold-Tilford tree layout
-see: Tidier Drawings of Trees
-     Reingold & Tilford
-     IEE Transactions on Software Engineering Vol SE-7 No2 March 1981
+usage: huffsdl /path/to/textfile.txt
+
+expects ASCII / utf-8 text file.
 
 todo:
-    Reingold Tilson tree drawing
-        Record Y coord from bottom (use y in rt)
-        part 1 of rT pass 1
-        Test pass1
-        pass 2 (etc.?)
+    Reingold Tilford tree layout
 
-    Change colours so it's an Xmas binary tree.
-
-
-    Tidy up:
-        clear out old code
-        strip out Neill's function and link to his files instead
-    have mouseover on vertexes so they report huffcode
-
-    exit button
-    more efficient 1px circle method.
 */
 
 #include "huffsdl.h"
@@ -36,30 +21,25 @@ int main(int argc, char *argv[])
     fntrow font[FNTCHARS][FNTHEIGHT];
     int drawcounter=0;
 
-
-
     if(argc!=2){
         fprintf(stderr, "incorrect usage, try eg"
                 "./huffman textfile.txt");
         exit(1);
     }
-
+    /* build huffman tree */
     chars = getCharCounts(argv[1]);
-
     q = orderInputQ(chars, q);
-
     root = buildTree(q);
 
-    /************* VISUALISATION ****************/
+
+    /************* VISUALISE TREE ****************/
     /*set up screen*/
     SDL_myInit(&sw);
     Neill_SDL_ReadFont(font, FONTFILE);
 
     knuth_getCoords(root, 0);
 
-    do { /* check for input
-            TODO: replace with mouseover check and
-            clickable button to exit  */
+    do { /* draw and animate tree */
         SDL_Delay(SDL_LOOP_DELAY);
         drawcounter += SDL_LOOP_DELAY;
 
@@ -71,19 +51,12 @@ int main(int argc, char *argv[])
             Neill_SDL_DrawString(&sw, font, "XMAS BINARY COMPRESSION TREE",
                                         PAD_W, PAD_H- FNTHEIGHT);
 
-
-
             /* update window once */
             SDL_RenderPresent(sw.renderer);
             SDL_UpdateWindowSurface(sw.win);
         }
     }
     while (!sw.finished);
-
-
-    /************* VISUALISATION END ************/
-
-
 
     /* Clear up graphics subsystems */
     SDL_DestroyWindow(sw.win);
@@ -98,17 +71,12 @@ int main(int argc, char *argv[])
 }
 
 
-/* Simple Knuth approach
-def knuth_layout(tree, depth):
-    if tree.left_child:
-        knuth_layout(tree.left_child, depth+1)
-    tree.x = i
-    tree.y = depth
-    i += 1
-    if tree.right_child:
-        knuth_layout(tree.right_child, depth+1)
 
-        */
+void initRand(void){
+   time_t now;
+   time(&now);
+   srand((int)now);
+}
 
 void knuth_getCoords(node *tree, int y)
 {
@@ -148,7 +116,6 @@ void knuth_drawTree(SDL_Simplewin *sw, node *tree,
             Neill_SDL_DrawChar(sw, fnt, tree->chr,
                                  this.x-(FNTWIDTH/2), this.y);
         } else {
-/*            SDL_SetRenderDrawColor(sw->renderer, COL_WIN_BG, OPAQUE);*/
             setRandColour(sw);
             Neill_SDL_RenderFillCircle(sw->renderer, this.x, this.y, CIRCRAD);
             SDL_SetRenderDrawColor(sw->renderer, COL_WHITE, OPAQUE);
@@ -167,8 +134,6 @@ cart getTreeCoord (node *this)
     return coord;
 }
 
-
-
 void setRandColour(SDL_Simplewin *sw)
 {
     unsigned cols[LIGHT_COLS][RGB_MMBRS]
@@ -183,16 +148,53 @@ void setRandColour(SDL_Simplewin *sw)
                                 OPAQUE);
 }
 
-void initRand(void){
-   time_t now;
-   time(&now);
-   srand((int)now);
+
+
+void SDL_myInit(SDL_Simplewin *sw)
+{
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+      fprintf(stderr, "\nUnable to initialize SDL:  %s\n", SDL_GetError());
+      SDL_Quit();
+      exit(1);
+    }
+
+    sw->finished = 0;
+
+    sw->win= SDL_CreateWindow("SDL Window",
+                            SDL_WINDOWPOS_UNDEFINED,
+                            SDL_WINDOWPOS_UNDEFINED,
+                            WIN_W, WIN_H,
+                            /*SDL_WINDOW_INPUT_GRABBED*/
+                            0);
+    if(sw->win == NULL){
+      fprintf(stderr, "\nUnable to initialize SDL Window:  %s\n",
+                                                        SDL_GetError());
+      SDL_Quit();
+      exit(1);
+    }
+
+    sw->renderer = SDL_CreateRenderer(sw->win, -1, 0);
+    if(sw->renderer == NULL){
+      fprintf(stderr, "\nUnable to initialize SDL Renderer:  %s\n",
+                                                        SDL_GetError());
+      SDL_Quit();
+      exit(1);
+    }
+
+    /* Set screen bg colour */
+    SDL_SetRenderDrawColor(sw->renderer, COL_WIN_BG, OPAQUE);
+    SDL_RenderClear(sw->renderer);
+    SDL_RenderPresent(sw->renderer);
+
+    SDL_SetRenderDrawBlendMode(sw->renderer, SDL_BLENDMODE_BLEND);
 }
 
 
 
-/*  Reingold-Tilford tree layout implementation */
 
+
+/* WIP - not in use in this version from here */
+/*  Reingold-Tilford tree layout implementation */
 /* pass 1 :
 
 */
@@ -243,12 +245,6 @@ contour *rt_1_trackContour(node *this, contour *l, contour *r)
         (for recursive seems to make more sense to do together
          and using linked list rather than following threads) */
 
-    /*  keep linked list of rt structs
-        first item = this level (insert now)
-        each item reports level min and max
-        in this function compare the items, 1 by 1 and get new linked list
-        then insert {this, this} as contour for this level.
-    */
     contour *ret, *temp;
     node *xmin, *xmax;
     double ymax;
@@ -296,162 +292,3 @@ void rt_1_addContour(contour *top, node *xmin, node *xmax)
     }
     cont->next = cont;
 }
-
-
-
-
-
-/* less efficient for unfilled circle, but I wanted a
-    1px circle outline. Quick and dirty. */
-void drawCirc(SDL_Simplewin *sw, cart centre, int radius)
-{
-    double angle;
-    int points = CIRCLEPOINTS, x, y, xprev=-1, yprev=-1;
-
-    while(points-- > 0){
-        angle = ((double)points / CIRCLEPOINTS) * 2 * M_PI;
-        x = centre.x + radius * cos(angle);
-        y = centre.y + radius * sin(angle);
-        if(x!=xprev || y!=yprev){
-            SDL_RenderDrawPoint(sw->renderer, x, y);
-            yprev=y, xprev=x;
-        }
-    }
-}
-
-
-
-void SDL_myInit(SDL_Simplewin *sw)
-{
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-      fprintf(stderr, "\nUnable to initialize SDL:  %s\n", SDL_GetError());
-      SDL_Quit();
-      exit(1);
-    }
-
-    sw->finished = 0;
-
-    sw->win= SDL_CreateWindow("SDL Window",
-                            SDL_WINDOWPOS_UNDEFINED,
-                            SDL_WINDOWPOS_UNDEFINED,
-                            WIN_W, WIN_H,
-                            /*SDL_WINDOW_INPUT_GRABBED*/
-                            0);
-    if(sw->win == NULL){
-      fprintf(stderr, "\nUnable to initialize SDL Window:  %s\n", SDL_GetError());
-      SDL_Quit();
-      exit(1);
-    }
-
-    sw->renderer = SDL_CreateRenderer(sw->win, -1, 0);
-    if(sw->renderer == NULL){
-      fprintf(stderr, "\nUnable to initialize SDL Renderer:  %s\n", SDL_GetError());
-      SDL_Quit();
-      exit(1);
-    }
-
-    /* Set screen bg colour */
-    SDL_SetRenderDrawColor(sw->renderer, COL_WIN_BG, OPAQUE);
-    SDL_RenderClear(sw->renderer);
-    SDL_RenderPresent(sw->renderer);
-
-    SDL_SetRenderDrawBlendMode(sw->renderer, SDL_BLENDMODE_BLEND);
-}
-
-
-
-
-
-/* the rest taken unchanged from neillsdl2 */
-
-void Neill_SDL_Events(SDL_Simplewin *sw)
-{
-   SDL_Event event;
-   while(SDL_PollEvent(&event))
-   {
-       switch (event.type){
-          case SDL_QUIT:
-          case SDL_MOUSEBUTTONDOWN:
-          case SDL_KEYDOWN:
-             sw->finished = 1;
-       }
-    }
-}
-
-
-void Neill_SDL_ReadFont(fntrow fontdata[FNTCHARS][FNTHEIGHT], char *fname)
-{
-
-    FILE *fp = fopen(fname, "rb");
-    size_t itms;
-    if(!fp){
-       fprintf(stderr, "Can't open Font file %s\n", fname);
-       exit(1);
-   }
-   itms = fread(fontdata, sizeof(fntrow), FNTCHARS*FNTHEIGHT, fp);
-   if(itms != FNTCHARS*FNTHEIGHT){
-       fprintf(stderr, "Can't read all Font file %s (%d) \n", fname, (int)itms);
-       exit(1);
-   }
-   fclose(fp);
-
-}
-
-
-void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy)
-{
-
-   unsigned x, y;
-   for(y = 0; y < FNTHEIGHT; y++){
-      for(x = 0; x < FNTWIDTH; x++){
-         if(fontdata[chr-FNT1STCHAR][y] >> (FNTWIDTH - 1 - x) & 1){
-            /*printf("*");*/
-            /* White Ink */
-            Neill_SDL_SetDrawColour(sw, 255, 255, 255);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
-         }
-         else{
-            /*printf(".");*/
-            /* Black Ink */
-            Neill_SDL_SetDrawColour(sw, 0, 0, 0);
-            SDL_RenderDrawPoint(sw->renderer, x + ox, y+oy);
-         }
-      }
-   }
-
-}
-
-void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy)
-{
-
-   int i=0;
-   unsigned char chr;
-   do{
-      chr = str[i++];
-      Neill_SDL_DrawChar(sw, fontdata, chr, ox+i*FNTWIDTH, oy);
-   }while(str[i]);
-}
-
-
-void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, Uint8 r, Uint8 g, Uint8 b)
-{
-
-   SDL_SetRenderDrawColor(sw->renderer, r, g, b, SDL_ALPHA_OPAQUE);
-
-}
-
-
-/* Filled Circle centred at (cx,cy) of radius r, see :
-   http://content.gpwiki.org/index.php/SDL:Tutorials:Drawing_and_Filling_Circles */
-void Neill_SDL_RenderFillCircle(SDL_Renderer *rend, int cx, int cy, int r)
-{
-
-   double dy;
-   for (dy = 1; dy <= r; dy += 1.0) {
-        double dx = floor(sqrt((2.0 * r * dy) - (dy * dy)));
-        SDL_RenderDrawLine(rend, cx-dx, cy+r-dy, cx+dx, cy+r-dy);
-        SDL_RenderDrawLine(rend, cx-dx, cy-r+dy, cx+dx, cy-r+dy);
-   }
-
-}
-

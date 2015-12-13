@@ -4,6 +4,10 @@ File: huffman.h
 
 Description: header for huffman encoding functions
 
+usage: huffvis /path/to/textfile.txt
+
+expects ASCII / utf-8 text file.
+
 */
 
 #include <stdio.h>  /* FILE, printf, fprintf, scanf, */

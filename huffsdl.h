@@ -4,11 +4,16 @@ File: huffsdl.h
 
 Description: header for huffman tree printing functions
 
+usage: huffsdl /path/to/textfile.txt
+
+expects ASCII / utf-8 text file.
+
 */
 #include <SDL2/SDL.h>
 #include <math.h>
-#include "huffvis.h"
 #include <time.h>
+#include "neillsdl2.h"
+#include "huffvis.h"
 
 #define TPRINTPART 2
 #define WIN_W 1500u
@@ -17,6 +22,8 @@ Description: header for huffman tree printing functions
 #define PAD_H 100u
 #define SDL_LOOP_DELAY 20
 
+
+#define FONTFILE "m7fixed.fnt"
 
 /*colours */
 #define RGB_MMBRS 3
@@ -45,21 +52,6 @@ Description: header for huffman tree printing functions
 #define CIRCLEPOINTS 100.0
 
 
-
-/* Font stuff (from neillsdl2.h*/
-typedef unsigned short fntrow;
-#define FNTWIDTH (sizeof(fntrow)*8)
-#define FNTHEIGHT 18
-#define FNTCHARS 96
-#define FNT1STCHAR 32
-#define FONTFILE "m7fixed.fnt"
-
-#ifndef M_PI
-#define M_PI           3.14159265358979323846
-#endif
-
-
-
 typedef enum TreePart {
     intNd, Leaf, Conn, Space
 } treePart;
@@ -67,13 +59,6 @@ typedef enum TreePart {
 enum LinePart {
     NODE, LEFTARM
 };
-
-/* simplewin struct from neillsdl2*/
-typedef struct SDL_Simplewin {
-    SDL_bool finished;
-    SDL_Window *win;
-    SDL_Renderer *renderer;
-} SDL_Simplewin;
 
 
 typedef struct Cartesian {
@@ -98,23 +83,14 @@ void knuth_drawTree(SDL_Simplewin *sw, node *tree,
                         fntrow fnt[FNTCHARS][FNTHEIGHT]);
 
 
-/* Tilford-Reingold functions */
+/* drawing functions */
+cart getTreeCoord (node *this);
+void SDL_myInit(SDL_Simplewin *sw);
+void setRandColour(SDL_Simplewin *sw);
+
+
+/* Tilford-Reingold layout functions (not used in this version yet) */
 contour *rt_1_trackContour(node *this, contour *l, contour *r);
 void rt_1_addContour(contour *top, node *xmin, node *xmax);
 double rt_1_pushApart(contour *l, contour *r);
 
-
-/* drawing functions */
-cart getTreeCoord (node *this);
-void SDL_myInit(SDL_Simplewin *sw);
-void drawCirc(SDL_Simplewin *sw, cart centre, int radius);
-void setRandColour(SDL_Simplewin *sw);
-
-
-/*taken wholesale from neillsdl2.h */
-void Neill_SDL_Events(SDL_Simplewin *sw);
-void Neill_SDL_DrawChar(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], unsigned char chr, int ox, int oy);
-void Neill_SDL_DrawString(SDL_Simplewin *sw, fntrow fontdata[FNTCHARS][FNTHEIGHT], char *str, int ox, int oy);
-void Neill_SDL_ReadFont(fntrow fontdata[FNTCHARS][FNTHEIGHT], char *fname);
-void Neill_SDL_SetDrawColour(SDL_Simplewin *sw, Uint8 r, Uint8 g, Uint8 b);
-void Neill_SDL_RenderFillCircle(SDL_Renderer *rend, int cx, int cy, int r);
