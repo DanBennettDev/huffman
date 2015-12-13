@@ -16,10 +16,10 @@ expects ASCII / utf-8 text file.
 #include "huffvis.h"
 
 #define TPRINTPART 2
-#define WIN_W 1500u
-#define WIN_H 1000u
+#define WIN_W 1000u
+#define WIN_H 800u
 #define PAD_W 10u
-#define PAD_H 100u
+#define PAD_H FNTHEIGHT * 2
 #define SDL_LOOP_DELAY 20
 
 
@@ -47,7 +47,8 @@ expects ASCII / utf-8 text file.
 
 /* layout */
 #define LAYER_HEIGHT 2
-#define SIBLING_SPACE 1
+#define KNUTH_SPACE 1
+#define RT_SPACE 1.5
 #define CIRCRAD 8
 #define CIRCLEPOINTS 100.0
 
@@ -68,9 +69,8 @@ typedef struct Cartesian {
 
 
 typedef struct Contour {
-    node *xmin;
-    node *xmax;
-    int y;
+    double xmin;
+    double xmax;
     struct Contour *next;
 } contour;
 
@@ -79,7 +79,9 @@ void initRand(void);
 
 /* Knuth functions */
 void knuth_getCoords(node *tree, int y);
-void knuth_drawTree(SDL_Simplewin *sw, node *tree,
+
+
+void drawTree(SDL_Simplewin *sw, node *tree,
                         fntrow fnt[FNTCHARS][FNTHEIGHT]);
 
 
@@ -89,8 +91,12 @@ void SDL_myInit(SDL_Simplewin *sw);
 void setRandColour(SDL_Simplewin *sw);
 
 
-/* Tilford-Reingold layout functions (not used in this version yet) */
-contour *rt_1_trackContour(node *this, contour *l, contour *r);
-void rt_1_addContour(contour *top, node *xmin, node *xmax);
-double rt_1_pushApart(contour *l, contour *r);
 
+/* Tilford-Reingold layout functions (not used in this version yet) */
+contour *rt_draw_1(node *this, int depth);
+contour *rt_1_trackContour(node *this, contour *l, contour *r, double space);
+contour *rt_1_addContour(contour *top, double xmin, double xmax);
+double rt_1_pushApart(contour *l, contour *r);
+double rt_1_1_move_onscreen(node *tree);
+void rt_2_petrify(node *tree, double offset);
+void freeContour(contour *cont);

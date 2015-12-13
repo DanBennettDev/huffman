@@ -15,7 +15,7 @@ expects ASCII / utf-8 text file.
 
 
 /* I also use this file as library for huffsdl
- - -DHUFFSDL_EX flag declared in makefile in that case*/
+in that case  -DHUFFSDL_EX flag declared in makefile */
 #ifndef HUFFSDL_EX
 int main(int argc, char *argv[])
 {
