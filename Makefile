@@ -14,8 +14,8 @@ SRC2 = $(EX2).c printTree.c
 
 
 EX3 = huffsdl
-INC3 = $(EX3).h $(EX2).h neillsdl2.h
-SRC3 = $(EX3).c $(EX2).c neillsdl2.c
+INC3 = $(EX3).h $(EX2).h
+SRC3 = $(EX3).c $(EX2).c
 
 
 CC = gcc

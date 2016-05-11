@@ -7,8 +7,8 @@ usage: huffsdl /path/to/textfile.txt
 
 expects ASCII / utf-8 text file.
 
-Knuth visualisation will handle any binary tree
-currently Reingold Tilford vis assumes tree is complete (eg huffman)
+Knuth layout algorithm will handle any binary tree
+currently "pseudo Reingold Tilford" assumes tree is complete (eg all huffman)
 
 */
 
@@ -33,7 +33,9 @@ int main(int argc, char *argv[])
         exit(1);
     }
     printf("\nenter number for layout type:\n");
-    printf("0. Knuth, 1. Reingold-Tilford (with asymm layout bug) :");
+    printf("0. Knuth, 1. pseudo-Reingold-Tilford\n");
+    printf("(1 is not 100%% correct as RT but better ");
+    printf("than Knuth in all cases I tried) :");
 
     while(scanf("%u", &mode)!=1 || mode > 1){
         printf("invalid choice, try again\n");
@@ -187,6 +189,8 @@ cart getTreeCoord (node *this)
     return coord;
 }
 
+
+
 void setRandColour(SDL_Simplewin *sw)
 {
     unsigned cols[LIGHT_COLS][RGB_MMBRS]
@@ -223,10 +227,7 @@ void knuth_getCoords(node *tree, int y)
 
 
 
-/*  Reingold-Tilford tree layout implementation */
-/* pass 1 :
-
-*/
+/*  (pseudo) Reingold-Tilford tree layout implementation */
 contour *rt_draw_1(node *this, int depth)
 {
     /* TODO assumes full tree for the moment: handle 1 child case */
@@ -251,7 +252,7 @@ contour *rt_draw_1(node *this, int depth)
     /* If first sibling, centre over children */
     if(this->bit==0){
         this->x = xTarget;
-    /* if 2nd position relative to sibling and move children to centre */
+    /* if 2nd, position relative to sibling and move children to centre */
     } else if(this->parent!=NULL){
         this->x = this->parent->c0->x + RT_SPACE;
         this->offset = this->x - xTarget;
@@ -259,18 +260,14 @@ contour *rt_draw_1(node *this, int depth)
 
     /* get distance to push nodes apart to fit subtrees */
     space = rt_1_pushApart(contL, contR);
-    printf("%c, %d\n", this->chr, this->weight);
 
-    /* push apart children and recentre over children*/
-    this->x += space/2;
-    this->offset += space/2;
-
-    if(this->c1!=NULL){
+    /* push apart children and recentre*/
+    if(space>0){ /*there will always be children if space>0*/
+        this->x += space/2;
+        this->offset += space/2;
         this->c1->x += space;
         this->c1->offset += space;
-
     }
-
 
     cont = rt_1_trackContour(this, contL, contR, space);
 
@@ -302,13 +299,9 @@ double rt_1_pushApart(contour *l, contour *r)
             push = (l->xmax - r->xmin) + RT_SPACE;
         }
 
-        printf("%f , %f | ", l->xmax, r->xmin);
-
         l=l->next;
         r=r->next;
     }
-
-    printf("\npush: %f\n", push);
 
     return push;
 }
@@ -317,12 +310,11 @@ double rt_1_pushApart(contour *l, contour *r)
 
 contour *rt_1_trackContour(node *this, contour *l, contour *r, double space)
 {
-    /*  combines task 2 and task 3 of RT pass 1
-        (for recursive seems to make more sense to do together
-         and using linked list of min/mad per level rather
+    /*  combines "task 2" and "task 3" of RT pass 1
+        ie - tracks L&R "contours" of subtrees to check for overlap
+        (for recursive implementation it seemed to me more efficient/clear to
+         do tasks 2 & 3 together using linked list of min/max per level rather
          than making/ following threads)
-
-        think this is where the issue is. Contours don't look right.
     */
 
     contour *ret=NULL, *temp;
@@ -337,11 +329,11 @@ contour *rt_1_trackContour(node *this, contour *l, contour *r, double space)
         l = l==NULL ? r : l;
 
         xmin = l->xmin < r->xmin + space ? l->xmin : r->xmin + space;
-        printf("Lmin %f, Rmin %f, min: %f\n", l->xmin, r->xmin, xmin);
-
         xmax = l->xmax > r->xmax + space ? l->xmax : r->xmax + space;
-        printf("Lmax %f, Rmax %f, max: %f\n", l->xmax, r->xmax, xmax);
 
+/*      printf("lmin %f rmin %f min%f\n", l->xmin, r->xmin, xmin);
+        printf("lmax %f rmax %f max%f\n", l->xmax, r->xmax, xmax);
+*/
         ret = rt_1_addContour(ret, xmin, xmax);
 
         temp = l;
@@ -367,7 +359,6 @@ contour *rt_1_addContour(contour *top, double xmin, double xmax)
 
     /* add to contour list */
     if(top==NULL){
-
         return cont;
     }
 
@@ -398,7 +389,7 @@ double rt_1_1_move_onscreen(node *tree)
     return min < temp ? min : temp;
 }
 
-
+/* positions are "set in stone" - kept term from RT paper */
 void rt_2_petrify(node *tree, double offset)
 {
     if(tree==NULL){
